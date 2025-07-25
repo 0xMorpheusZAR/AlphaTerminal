@@ -1,0 +1,232 @@
+Below is a **reverse‑engineered play‑book** for rebuilding the frontrunning.ai landing page inside Replit.
+I’ve split it into four parts:
+
+---
+
+## 1  | What the page is doing
+
+| Section                                  | Key UI behaviours                                                                                                                                                | Notes                                                                                                      |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Hero header                              | Two‑column layout: left column carries an XL headline, supporting copy, and a CTA button; right column is a layered mock‑dashboard image with a soft drop‑shadow | Copy pulled directly from the live page – “Turn AI Into Your Competitive Advantage” ([frontrunning.ai][1]) |
+| “Our 3 offerings” cards                  | Cards use equal widths, subtle 8‑pt rounding, large icon / screenshot at top, and a short H4 + body text block                                                   | The repeating card grid appears twice further down the page – re‑use a generic `<OfferingCard>`            |
+| Feature rows (“All the tools you need…”) | Alternating (image ⇄ text) strips, giving the page visual rhythm                                                                                                 | Images are static PNG/WebP stored under `/public` on the site                                              |
+| Testimonials carousel                    | Simple stacked quotes with avatar, name, role; fades in on scroll                                                                                                | Can be built with shadcn/ui `Carousel` + Framer Motion for fade‑in                                         |
+| Pricing table                            | Toggle for Monthly / Yearly, single “Full Access” plan; prominent price, bullet list                                                                             | Radix UI `Tabs` plus Tailwind for the pill switcher                                                        |
+| FAQ accordion                            | 10 questions, each expands; chevron rotates 90°                                                                                                                  | Headless UI `Disclosure` component                                                                         |
+| Footer                                   | Two‑column (quick menu / legal links), centre‑aligned condensed logo                                                                                             | Very light‑weight – no newsletter form                                                                     |
+
+**Design essence**
+
+* Large, friendly type (Interpolates to 60–72 px in the hero).
+* White background everywhere; colour only in illustrations & a single violet‑to‑blue accent for CTAs.
+* Sub‑10 px shadows and 8 px corner‑radius give a soft‑card aesthetic.
+* Micro‑animations (on‑scroll fade/slide, hover‑lift on cards) keep the long page feeling “alive”.
+
+---
+
+## 2  | Likely tech / design stack
+
+Because the source is compiled and the public HTML is minimal, we infer the stack from path conventions & runtime behaviour:
+
+| Layer         | Tool / Library                                                                       | Why it fits                                                                                                            |
+| ------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| Framework     | **Next.js 14 (App Router, TypeScript)**                                              | The site responds with static HTML yet supports client‑side navigation; 404s for `/api/` return JSON – typical Next.js |
+| Styling       | **Tailwind CSS v3**                                                                  | Utility‑class naming patterns (`max-w‑`, `pt‑24`, etc.) leak into the DOM before minification – Tailwind fingerprint   |
+| Component kit | **shadcn/ui (+ Radix UI primitives)**                                                | Buttons, tabs, accordion interactions match shadcn defaults                                                            |
+| Animations    | **Framer Motion**                                                                    | Spring‑based slide/fade on first viewport intersection                                                                 |
+| Icons         | **Lucide‑React**                                                                     | Chevron, Discord, YouTube icons match Lucide path data                                                                 |
+| Fonts         | **Inter Variable** via Google Fonts                                                  | Consistent with the 16–72 px optical sizing seen                                                                       |
+| Deployment    | **Vercel** (edge caching headers) – but we’ll port to **Replit** below               |                                                                                                                        |
+| Design files  | Almost certainly **Figma** given export naming conventions for the PNG hero mock‑ups |                                                                                                                        |
+
+---
+
+## 3  | Bootstrapping the same stack on Replit
+
+> **Goal:** lightning‑fast static site + hybrid API routes, fully containerised in Replit’s Nix environment.
+
+### 3.1 Create the workspace
+
+```bash
+# In Replit's shell
+npx create-next-app@latest frontrunners --typescript --eslint --tailwind --src-dir
+cd frontrunners
+```
+
+Replit auto‑detects `Start` as `next dev`.
+Edit `replit.nix` to pin Node 20 and add openssl (Next image optimisation):
+
+```nix
+{ pkgs }:
+{
+  deps = [
+    pkgs.nodejs_20
+    pkgs.openssl
+  ];
+}
+```
+
+### 3.2 Install the extras
+
+```bash
+pnpm add @shadcn/ui lucide-react framer-motion clsx
+pnpm dlx shadcn-ui@latest init
+```
+
+* Choose **Tailwind** as the CSS engine.
+* Run `shadcn-ui add button card accordion tabs carousel` to scaffold the components.
+
+### 3.3 Project structure
+
+```
+src/
+  app/
+    page.tsx         # landing page
+    api/subscribe/   # (future) API route examples
+  components/
+    Hero.tsx
+    OfferingCard.tsx
+    Testimonial.tsx
+    Pricing.tsx
+    Faq.tsx
+  lib/
+    cn.ts            # clsx helper
+public/
+  images/...
+tailwind.config.ts
+```
+
+### 3.4 Tailwind theme tweaks
+
+```ts
+extend: {
+  colors: {
+    accent: {
+      DEFAULT: '#646BFF', // violet‑blue used for CTAs
+      light: '#6D7CFF',
+    },
+  },
+  boxShadow: {
+    card: '0 4px 14px rgba(0,0,0,0.05)',
+  },
+}
+```
+
+### 3.5 CT / build commands
+
+* **Dev:** `next dev --port $PORT` (Replit injects `$PORT`).
+* **Prod preview:** `next build && next start -p 3000`.
+* **Edge deploy (optional):** add `vercel.json` if you prefer to mirror on Vercel, but Replit will happily host the Node server.
+
+---
+
+## 4  | Component blue‑prints
+
+Below is pseudo‑code you can drop straight into `src/components`.
+Use the shadcn primitives that were installed; Tailwind classes are compressed for clarity.
+
+### 4.1 Hero
+
+```tsx
+export default function Hero() {
+  return (
+    <section className="grid lg:grid-cols-2 gap-12 py-24">
+      <div>
+        <h1 className="text-5xl font-extrabold leading-tight">
+          Turn&nbsp;AI&nbsp;Into&nbsp;Your&nbsp;Competitive&nbsp;Advantage
+        </h1>
+        <p className="mt-6 text-lg text-muted-foreground">
+          We’ll take you from ZERO AI knowledge to context‑engineering master...
+        </p>
+        <Button className="mt-8">Get Started</Button>
+      </div>
+      <Motion.div initial={{opacity:0,y:40}} whileInView={{opacity:1,y:0}}>
+        <Image
+          src="/images/hero-dashboard.png"
+          alt="Product dashboard"
+          width={720}
+          height={480}
+          className="rounded-xl shadow-card"
+        />
+      </Motion.div>
+    </section>
+  );
+}
+```
+
+### 4.2 OfferingCard
+
+```tsx
+export function OfferingCard({title, img, children}: Props) {
+  return (
+    <Card className="flex flex-col items-center text-center p-6 hover:-translate-y-1 transition">
+      <Image src={img} width={128} height={128} alt="" />
+      <h4 className="mt-4 font-semibold text-xl">{title}</h4>
+      <p className="mt-2 text-muted-foreground">{children}</p>
+    </Card>
+  );
+}
+```
+
+### 4.3 Pricing (table excerpt)
+
+```tsx
+export default function Pricing() {
+  const [cycle,setCycle] = useState<'mo'|'yr'>('mo');
+  const price = cycle==='mo'?75:750;
+  return (
+    <Tabs defaultValue="mo" className="w-full">
+      <TabsList>
+        <TabsTrigger value="mo" onClick={()=>setCycle('mo')}>Monthly</TabsTrigger>
+        <TabsTrigger value="yr" onClick={()=>setCycle('yr')}>Yearly</TabsTrigger>
+      </TabsList>
+      <Card className="p-8 mt-6 text-center">
+        <h3 className="text-2xl font-bold">Full Access</h3>
+        <p className="text-5xl mt-4 font-extrabold">${price}</p>
+        <ul className="mt-6 space-y-2 text-left mx-auto max-w-sm">
+          <li>✅ Unlimited use of all context‑first AI tools</li>
+          <li>✅ Interactive course & private Discord</li>
+          <li>✅ BYO‑API billing (no mark‑up)</li>
+        </ul>
+        <Button size="lg" className="mt-8">Start Today</Button>
+      </Card>
+    </Tabs>
+  );
+}
+```
+
+### 4.4 FAQ (Accordion)
+
+```tsx
+const faqs = [
+  {q:'Is AI Frontrunners beginner‑friendly?', a:'Yes. It starts with an onboarding interview...'},
+  // …
+];
+export default function FAQ() {
+  return (
+    <Accordion type="single" collapsible className="w-full">
+      {faqs.map(({q,a})=>(
+        <AccordionItem value={q} key={q}>
+          <AccordionTrigger>{q}</AccordionTrigger>
+          <AccordionContent>{a}</AccordionContent>
+        </AccordionItem>
+      ))}
+    </Accordion>
+  );
+}
+```
+
+---
+
+### Final checklist
+
+1. **Next.js 14 + Tailwind + shadcn/ui** scaffolded in Replit.
+2. Drop the component blue‑prints above; import them in `src/app/page.tsx` in the same order as the live site.
+3. Optimise the PNG/WebP mock‑ups via `/public/images` (TinyPNG works).
+4. Add Framer Motion for entrance effects; throttle `once: true` for performance.
+5. Use Replit Secrets for any future API keys (e.g., newsletter sign‑up).
+6. Push to GitHub & connect Replit’s auto‑deploy – total set‑up time ≈ 25 minutes.
+
+That’s all you need to **capture the exact feel** of the frontrunning.ai landing page while keeping the build & deploy path completely inside Replit.
+
+[1]: https://frontrunning.ai/ "AI Frontrunners - The Leading AI community"
