@@ -155,17 +155,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/news", async (req, res) => {
     try {
       const { limit = 50, coins } = req.query;
-      let news;
       
-      if (coins) {
-        const coinArray = (coins as string).split(',');
-        news = await storage.getNewsByCoins(coinArray);
-      } else {
-        news = await storage.getNewsItems(Number(limit));
-      }
+      // Get data directly from Velo API
+      const coinArray = coins ? (coins as string).split(',') : undefined;
+      const veloNews = await veloService.getNews(Number(limit), coinArray);
       
-      res.json(news);
+      // Transform to frontend format
+      const formattedNews = veloNews.map(item => ({
+        id: item.id.toString(),
+        title: item.headline,
+        content: item.summary,
+        source: item.source,
+        sourceUrl: item.link,
+        priority: item.priority,
+        coins: item.coins,
+        publishedAt: new Date(item.time).toISOString(),
+        createdAt: new Date(item.effectiveTime).toISOString()
+      }));
+      
+      res.json(formattedNews);
     } catch (error) {
+      console.error("News fetch error:", error);
       res.status(500).json({ message: "Failed to fetch news" });
     }
   });
@@ -194,17 +204,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const historicalNews = await veloService.getHistoricalNews(48);
       
-      // Store historical news in database
-      const savedNews = [];
-      for (const item of historicalNews) {
-        const newsData = veloService.formatNewsForStorage(item);
-        const saved = await storage.createNewsItem(newsData);
-        savedNews.push(saved);
-      }
+      // Transform to frontend format
+      const formattedNews = historicalNews.map(item => ({
+        id: item.id.toString(),
+        title: item.headline,
+        content: item.summary,
+        source: item.source,
+        sourceUrl: item.link,
+        priority: item.priority,
+        coins: item.coins,
+        publishedAt: new Date(item.time).toISOString(),
+        createdAt: new Date(item.effectiveTime).toISOString()
+      }));
       
       res.json({ 
-        message: `Loaded ${savedNews.length} news items from past 48 hours`,
-        news: savedNews 
+        message: `Loaded ${formattedNews.length} news items from past 48 hours`,
+        news: formattedNews 
       });
     } catch (error) {
       console.error("Historical news fetch error:", error);

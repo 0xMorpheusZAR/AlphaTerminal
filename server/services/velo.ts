@@ -1,16 +1,15 @@
 import WebSocket from 'ws';
 
 export interface VeloNewsItem {
-  id: string;
-  title: string;
-  content?: string;
+  id: number;
+  time: number;
+  effectiveTime: number;
+  headline: string;
   source: string;
-  source_url?: string;
   priority: number;
   coins: string[];
-  effective_price?: number;
-  published_at: string;
-  created_at: string;
+  summary?: string;
+  link?: string;
 }
 
 export interface VeloMarketData {
@@ -23,8 +22,8 @@ export interface VeloMarketData {
 
 export class VeloService {
   private apiKey: string;
-  private baseUrl = 'https://api.velodata.app/v1';
-  private wsUrl = 'wss://api.velodata.app/v1/news/stream';
+  private baseUrl = 'https://api.velodata.app';
+  private wsUrl = 'wss://ws.velodata.app/news';
   private ws: WebSocket | null = null;
   private streamCallbacks: Set<(data: any) => void> = new Set();
 
@@ -67,7 +66,8 @@ export class VeloService {
     
     try {
       const response = await this.makeRequest(endpoint);
-      return response.data || response.news || [];
+      // Response is directly an array of news items
+      return Array.isArray(response) ? response : [];
     } catch (error) {
       console.error('Error fetching Velo news:', error);
       return [];
@@ -75,18 +75,16 @@ export class VeloService {
   }
 
   async getHistoricalNews(hours: number = 48): Promise<VeloNewsItem[]> {
-    // Calculate timestamp for 48 hours ago
-    const since = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+    // Calculate timestamp for 48 hours ago (in milliseconds)
+    const since = Date.now() - (hours * 60 * 60 * 1000);
     const endpoint = `/news?since=${since}&limit=1000`;
     
     try {
       const response = await this.makeRequest(endpoint);
-      const news = response.data || response.news || [];
+      const news = Array.isArray(response) ? response : [];
       
-      // Sort by published_at in descending order (newest first)
-      return news.sort((a: VeloNewsItem, b: VeloNewsItem) => 
-        new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
-      );
+      // Sort by time in descending order (newest first)
+      return news.sort((a: VeloNewsItem, b: VeloNewsItem) => b.time - a.time);
     } catch (error) {
       console.error('Error fetching historical Velo news:', error);
       return [];
@@ -98,7 +96,7 @@ export class VeloService {
     
     try {
       const response = await this.makeRequest(endpoint);
-      return response.data || response.news || [];
+      return Array.isArray(response) ? response : [];
     } catch (error) {
       console.error('Error fetching Velo news by priority:', error);
       return [];
@@ -168,14 +166,14 @@ export class VeloService {
   // Helper method to format news items for database storage
   formatNewsForStorage(veloNews: VeloNewsItem): any {
     return {
-      title: veloNews.title,
-      content: veloNews.content,
+      title: veloNews.headline,
+      content: veloNews.summary,
       source: veloNews.source,
-      sourceUrl: veloNews.source_url,
+      sourceUrl: veloNews.link,
       priority: veloNews.priority,
       coins: veloNews.coins,
-      effectivePrice: veloNews.effective_price?.toString(),
-      publishedAt: new Date(veloNews.published_at),
+      effectivePrice: null,
+      publishedAt: new Date(veloNews.time),
     };
   }
 
@@ -200,11 +198,6 @@ export class VeloService {
       return;
     }
 
-    // Temporarily disable WebSocket connection until we get the correct endpoint
-    console.log('WebSocket streaming temporarily disabled - using REST API polling');
-    return;
-
-    /*
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       console.log('WebSocket already connected');
       this.streamCallbacks.add(onMessage);
@@ -222,12 +215,22 @@ export class VeloService {
 
       this.ws.on('open', () => {
         console.log('Velo WebSocket connected');
-        this.ws?.send(JSON.stringify({ action: 'subscribe', channel: 'news' }));
+        // Send authentication if needed
+        this.ws?.send(JSON.stringify({ type: 'auth', token: this.apiKey }));
       });
 
       this.ws.on('message', (data: Buffer) => {
         try {
-          const message = JSON.parse(data.toString());
+          const messageStr = data.toString();
+          
+          // Handle control messages
+          if (['connected', 'heartbeat', 'closed'].includes(messageStr)) {
+            console.log(`Velo WebSocket: ${messageStr}`);
+            return;
+          }
+          
+          // Parse JSON messages
+          const message = JSON.parse(messageStr);
           
           // Broadcast to all callbacks
           this.streamCallbacks.forEach(callback => {
@@ -264,7 +267,6 @@ export class VeloService {
     } catch (error) {
       console.error('Error starting news stream:', error);
     }
-    */
   }
 
   stopNewsStream(onMessage: (data: any) => void): void {
@@ -278,74 +280,68 @@ export class VeloService {
 
   private getMockData(endpoint: string): any {
     if (endpoint.includes('/news')) {
-      return {
-        data: this.generateMockNews(),
-        news: this.generateMockNews()
-      };
+      return this.generateMockNews();
     }
-    return { data: [] };
+    return [];
   }
 
   private generateMockNews(): VeloNewsItem[] {
+    const now = Date.now();
     const mockNews: VeloNewsItem[] = [
       {
-        id: '1',
-        title: 'Bitcoin Surges Past $45,000 as ETF Approval Rumors Intensify',
-        content: 'Bitcoin price has broken through the $45,000 resistance level amid growing speculation about potential spot ETF approvals.',
-        source: 'CryptoNews',
-        source_url: 'https://example.com/news/1',
+        id: 1,
+        time: now - 3600000, // 1 hour ago
+        effectiveTime: now - 3600000,
+        headline: 'Bitcoin Surges Past $45,000 as ETF Approval Rumors Intensify',
+        source: 'Velo',
         priority: 1,
         coins: ['BTC'],
-        effective_price: 45000,
-        published_at: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-        created_at: new Date(Date.now() - 3600000).toISOString(),
+        summary: '# Bitcoin ETF Rumors\n\nBitcoin price has broken through the $45,000 resistance level amid growing speculation about potential spot ETF approvals.',
+        link: 'https://velodata.app/news/1',
       },
       {
-        id: '2',
-        title: 'Ethereum Layer-2 TVL Reaches All-Time High of $50 Billion',
-        content: 'The total value locked in Ethereum Layer-2 solutions has hit a new record as users seek cheaper transaction fees.',
-        source: 'DeFi Daily',
-        source_url: 'https://example.com/news/2',
+        id: 2,
+        time: now - 7200000, // 2 hours ago
+        effectiveTime: now - 7200000,
+        headline: 'Ethereum Layer-2 TVL Reaches All-Time High of $50 Billion',
+        source: 'Velo',
         priority: 2,
         coins: ['ETH', 'ARB', 'OP'],
-        effective_price: 2500,
-        published_at: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
-        created_at: new Date(Date.now() - 7200000).toISOString(),
+        summary: '# Layer-2 Milestone\n\nThe total value locked in Ethereum Layer-2 solutions has hit a new record as users seek cheaper transaction fees.',
+        link: 'https://velodata.app/news/2',
       },
       {
-        id: '3',
-        title: 'Solana Network Experiences Brief Outage, Now Fully Operational',
-        content: 'The Solana blockchain experienced a 2-hour network disruption but has since recovered with validators back online.',
-        source: 'Chain Watch',
-        source_url: 'https://example.com/news/3',
+        id: 3,
+        time: now - 14400000, // 4 hours ago
+        effectiveTime: now - 14400000,
+        headline: 'Solana Network Experiences Brief Outage, Now Fully Operational',
+        source: 'Velo',
         priority: 1,
         coins: ['SOL'],
-        effective_price: 95,
-        published_at: new Date(Date.now() - 14400000).toISOString(), // 4 hours ago
-        created_at: new Date(Date.now() - 14400000).toISOString(),
+        summary: '# Solana Recovery\n\nThe Solana blockchain experienced a 2-hour network disruption but has since recovered with validators back online.',
+        link: 'https://velodata.app/news/3',
       },
       {
-        id: '4',
-        title: 'DeFi Protocol Aave V3 Launches on Scroll Mainnet',
-        content: 'Aave has expanded to the Scroll zkEVM network, bringing lending and borrowing capabilities to the Layer-2 solution.',
-        source: 'Protocol News',
-        source_url: 'https://example.com/news/4',
+        id: 4,
+        time: now - 21600000, // 6 hours ago
+        effectiveTime: now - 21600000,
+        headline: 'DeFi Protocol Aave V3 Launches on Scroll Mainnet',
+        source: 'Velo',
         priority: 2,
         coins: ['AAVE', 'SCROLL'],
-        published_at: new Date(Date.now() - 21600000).toISOString(), // 6 hours ago
-        created_at: new Date(Date.now() - 21600000).toISOString(),
+        summary: '# Aave V3 Expansion\n\nAave has expanded to the Scroll zkEVM network, bringing lending and borrowing capabilities to the Layer-2 solution.',
+        link: 'https://velodata.app/news/4',
       },
       {
-        id: '5',
-        title: 'XRP Price Jumps 15% Following Favorable Court Ruling',
-        content: 'Ripple\'s XRP token saw significant gains after a court decision favored the company in its ongoing SEC lawsuit.',
-        source: 'Legal Crypto',
-        source_url: 'https://example.com/news/5',
+        id: 5,
+        time: now - 28800000, // 8 hours ago
+        effectiveTime: now - 28800000,
+        headline: 'XRP Price Jumps 15% Following Favorable Court Ruling',
+        source: 'Velo',
         priority: 1,
         coins: ['XRP'],
-        effective_price: 0.52,
-        published_at: new Date(Date.now() - 28800000).toISOString(), // 8 hours ago
-        created_at: new Date(Date.now() - 28800000).toISOString(),
+        summary: '# XRP Legal Victory\n\nRipple\'s XRP token saw significant gains after a court decision favored the company in its ongoing SEC lawsuit.',
+        link: 'https://velodata.app/news/5',
       },
     ];
     

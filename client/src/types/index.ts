@@ -54,8 +54,8 @@ export interface NewsItem {
   content?: string;
   source?: string;
   sourceUrl?: string;
-  priority?: number;
-  coins?: string[];
+  priority: number;
+  coins: string[];
   effectivePrice?: string;
   publishedAt: string;
   createdAt?: string;
