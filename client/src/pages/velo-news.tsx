@@ -246,6 +246,21 @@ export default function VeloNews() {
     return `https://www.blofin.com/en/futures/${coin.toLowerCase()}usdt`;
   };
 
+  // Toggle auto refresh
+  const toggleAutoRefresh = (checked: boolean) => {
+    setIsAutoRefresh(checked);
+  };
+
+  // Handle sync button
+  const handleSync = () => {
+    syncNewsMutation.mutate();
+  };
+
+  // Extract all unique coins from news
+  const allCoins = Array.from(new Set(
+    news.flatMap(item => item.coins || [])
+  )).sort();
+
   // Filter news
   const filteredNews = news.filter((item) => {
     // Priority filter
@@ -273,7 +288,10 @@ export default function VeloNews() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <Header 
+        title="Velo News" 
+        description="Real-time cryptocurrency news and market updates" 
+      />
       
       <main className="container mx-auto p-6">
         {/* News Controls */}
@@ -524,7 +542,7 @@ export default function VeloNews() {
             </ScrollArea>
           </CardContent>
         </Card>
-      </div>
+      </main>
     </div>
   );
 }

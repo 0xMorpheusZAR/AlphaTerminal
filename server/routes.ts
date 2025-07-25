@@ -227,32 +227,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Start Velo news streaming
-  veloService.startNewsStream(async (message) => {
-    try {
-      if (message.type === 'news' && message.data) {
-        // Save new news item to database
-        const newsData = veloService.formatNewsForStorage(message.data);
-        const savedNews = await storage.createNewsItem(newsData);
-        
-        // Broadcast to all connected WebSocket clients
-        if ((app as any).veloStreamClients) {
-          const broadcast = JSON.stringify({
-            type: 'news_update',
-            data: savedNews
-          });
-          
-          (app as any).veloStreamClients.forEach((ws: any) => {
-            if (ws.readyState === 1) { // WebSocket.OPEN
-              ws.send(broadcast);
-            }
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error processing stream message:', error);
-    }
-  });
+  // Start Velo news streaming - Disabled for now due to WebSocket 404 errors
+  // veloService.startNewsStream(async (message) => {
+  //   try {
+  //     if (message.type === 'news' && message.data) {
+  //       // Save new news item to database
+  //       const newsData = veloService.formatNewsForStorage(message.data);
+  //       const savedNews = await storage.createNewsItem(newsData);
+  //       
+  //       // Broadcast to all connected WebSocket clients
+  //       if ((app as any).veloStreamClients) {
+  //         const broadcast = JSON.stringify({
+  //           type: 'news_update',
+  //           data: savedNews
+  //         });
+  //         
+  //         (app as any).veloStreamClients.forEach((ws: any) => {
+  //           if (ws.readyState === 1) { // WebSocket.OPEN
+  //             ws.send(broadcast);
+  //           }
+  //         });
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error('Error processing stream message:', error);
+  //   }
+  // });
 
   // Monte Carlo simulation routes
   app.get("/api/monte-carlo/:tokenId", async (req, res) => {

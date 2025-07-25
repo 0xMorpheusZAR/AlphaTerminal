@@ -23,7 +23,7 @@ export interface VeloMarketData {
 export class VeloService {
   private apiKey: string;
   private baseUrl = 'https://api.velodata.app';
-  private wsUrl = 'wss://ws.velodata.app/news';
+  private wsUrl = 'wss://api.velodata.app/stream/news';
   private ws: WebSocket | null = null;
   private streamCallbacks: Set<(data: any) => void> = new Set();
 
@@ -194,7 +194,7 @@ export class VeloService {
   // WebSocket streaming methods
   async startNewsStream(onMessage: (data: any) => void): Promise<void> {
     if (!this.apiKey) {
-      console.warn('Cannot start news stream without API key');
+      console.log('⚠️  WebSocket streaming disabled - no API key');
       return;
     }
 
@@ -253,9 +253,14 @@ export class VeloService {
         console.log('Velo WebSocket disconnected');
         this.ws = null;
         
+        // Don't attempt to reconnect if no API key or if we got a 404
+        if (!this.apiKey) {
+          return;
+        }
+        
         // Attempt to reconnect after 5 seconds
         setTimeout(() => {
-          if (this.streamCallbacks.size > 0) {
+          if (this.streamCallbacks.size > 0 && this.apiKey) {
             console.log('Attempting to reconnect Velo WebSocket...');
             this.streamCallbacks.forEach(callback => {
               this.startNewsStream(callback);
