@@ -189,6 +189,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get historical news (past 48 hours)
+  app.get("/api/news/historical", async (req, res) => {
+    try {
+      const historicalNews = await veloService.getHistoricalNews(48);
+      
+      // Store historical news in database
+      const savedNews = [];
+      for (const item of historicalNews) {
+        const newsData = veloService.formatNewsForStorage(item);
+        const saved = await storage.createNewsItem(newsData);
+        savedNews.push(saved);
+      }
+      
+      res.json({ 
+        message: `Loaded ${savedNews.length} news items from past 48 hours`,
+        news: savedNews 
+      });
+    } catch (error) {
+      console.error("Historical news fetch error:", error);
+      res.status(500).json({ message: "Failed to fetch historical news" });
+    }
+  });
+
+  // Start Velo news streaming
+  veloService.startNewsStream(async (message) => {
+    try {
+      if (message.type === 'news' && message.data) {
+        // Save new news item to database
+        const newsData = veloService.formatNewsForStorage(message.data);
+        const savedNews = await storage.createNewsItem(newsData);
+        
+        // Broadcast to all connected WebSocket clients
+        if ((app as any).veloStreamClients) {
+          const broadcast = JSON.stringify({
+            type: 'news_update',
+            data: savedNews
+          });
+          
+          (app as any).veloStreamClients.forEach((ws: any) => {
+            if (ws.readyState === 1) { // WebSocket.OPEN
+              ws.send(broadcast);
+            }
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error processing stream message:', error);
+    }
+  });
+
   // Monte Carlo simulation routes
   app.get("/api/monte-carlo/:tokenId", async (req, res) => {
     try {

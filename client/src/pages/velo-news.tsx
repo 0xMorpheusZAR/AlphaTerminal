@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Header from "@/components/layout/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,25 +9,148 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useNewsAutoRefresh } from "@/hooks/use-real-time";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { 
+  RefreshCw, 
+  Clock, 
+  ExternalLink, 
+  AlertCircle, 
+  Loader2,
+  ArrowDown,
+  Wifi,
+  WifiOff,
+  Calendar
+} from "lucide-react";
+import { format, formatDistanceToNow, isWithinInterval, subHours } from "date-fns";
 import type { NewsItem } from "@/types";
 
 export default function VeloNews() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { isAutoRefresh, toggleAutoRefresh } = useNewsAutoRefresh();
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
   
+  // State
+  const [isAutoRefresh, setIsAutoRefresh] = useState(true);
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [coinFilter, setCoinFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [isLoadingHistorical, setIsLoadingHistorical] = useState(false);
+  const [wsStatus, setWsStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
+  const [newItemsCount, setNewItemsCount] = useState(0);
 
+  // WebSocket ref
+  const wsRef = useRef<WebSocket | null>(null);
+
+  // Fetch news
   const { data: news = [], isLoading, refetch } = useQuery({
     queryKey: ['/api/news'],
-    queryFn: () => api.news.getAll(100),
-    refetchInterval: isAutoRefresh ? 10000 : false,
+    queryFn: () => api.news.getAll(1000), // Get more items for 48 hours
+    refetchInterval: isAutoRefresh ? 30000 : false, // Refresh every 30 seconds
   });
+
+  // Load historical news
+  const loadHistoricalNews = useCallback(async () => {
+    setIsLoadingHistorical(true);
+    try {
+      const response = await fetch('/api/news/historical');
+      const data = await response.json();
+      
+      if (!response.ok) throw new Error(data.message);
+      
+      toast({
+        title: "Historical Data Loaded",
+        description: data.message,
+      });
+      
+      await queryClient.invalidateQueries({ queryKey: ['/api/news'] });
+    } catch (error) {
+      toast({
+        title: "Failed to Load Historical Data",
+        description: "Could not fetch past 48 hours of news",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingHistorical(false);
+    }
+  }, [queryClient, toast]);
+
+  // Setup WebSocket connection
+  useEffect(() => {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}`;
+    
+    const connectWebSocket = () => {
+      const ws = new WebSocket(wsUrl);
+      
+      ws.onopen = () => {
+        console.log('Connected to news stream');
+        setWsStatus('connected');
+        ws.send(JSON.stringify({ type: 'subscribe', channel: 'news' }));
+      };
+      
+      ws.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          
+          if (message.type === 'news_update' && message.data) {
+            queryClient.setQueryData(['/api/news'], (oldData: NewsItem[] | undefined) => {
+              if (!oldData) return [message.data];
+              
+              // Add new item at the beginning
+              const newData = [message.data, ...oldData];
+              
+              // If user is not at bottom, increment new items count
+              if (!isAtBottom) {
+                setNewItemsCount(prev => prev + 1);
+              }
+              
+              return newData;
+            });
+            
+            // Show notification if user is at bottom
+            if (isAtBottom) {
+              toast({
+                title: "New Story",
+                description: message.data.title,
+              });
+            }
+          }
+        } catch (error) {
+          console.error('WebSocket message error:', error);
+        }
+      };
+      
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        setWsStatus('disconnected');
+      };
+      
+      ws.onclose = () => {
+        console.log('WebSocket connection closed');
+        setWsStatus('disconnected');
+        
+        // Attempt reconnection after 5 seconds
+        setTimeout(connectWebSocket, 5000);
+      };
+      
+      wsRef.current = ws;
+    };
+    
+    connectWebSocket();
+    
+    return () => {
+      wsRef.current?.close();
+    };
+  }, [queryClient, toast, isAtBottom]);
+
+  // Load historical data on mount
+  useEffect(() => {
+    loadHistoricalNews();
+  }, [loadHistoricalNews]);
 
   const syncNewsMutation = useMutation({
     mutationFn: () => api.news.sync(50),
@@ -47,12 +170,26 @@ export default function VeloNews() {
     },
   });
 
-  const handleRefresh = () => {
-    refetch();
-  };
+  // Handle scroll
+  const handleScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
+    const scrollContainer = event.currentTarget;
+    const scrollPosition = scrollContainer.scrollTop + scrollContainer.clientHeight;
+    const scrollHeight = scrollContainer.scrollHeight;
+    
+    // Check if user is at bottom (within 100px threshold)
+    const atBottom = scrollHeight - scrollPosition < 100;
+    setIsAtBottom(atBottom);
+    
+    // Clear new items count if scrolled to top
+    if (scrollContainer.scrollTop < 100 && newItemsCount > 0) {
+      setNewItemsCount(0);
+    }
+  }, [newItemsCount]);
 
-  const handleSync = () => {
-    syncNewsMutation.mutate();
+  // Scroll to top
+  const scrollToTop = () => {
+    scrollAreaRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    setNewItemsCount(0);
   };
 
   const getPriorityBadge = (priority: number) => {
@@ -67,49 +204,78 @@ export default function VeloNews() {
   };
 
   const formatTimeAgo = (dateString: string) => {
-    const date = new Date(dateString);
+    return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+  };
+
+  // Group news by time periods
+  const groupNewsByPeriod = (newsItems: NewsItem[]) => {
     const now = new Date();
-    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    const oneHourAgo = subHours(now, 1);
+    const sixHoursAgo = subHours(now, 6);
+    const twentyFourHoursAgo = subHours(now, 24);
+    const fortyEightHoursAgo = subHours(now, 48);
     
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes} mins ago`;
+    const groups: { [key: string]: NewsItem[] } = {
+      'Last Hour': [],
+      'Last 6 Hours': [],
+      'Last 24 Hours': [],
+      'Last 48 Hours': [],
+      'Older': []
+    };
     
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours}h ago`;
+    newsItems.forEach(item => {
+      const publishedAt = new Date(item.publishedAt);
+      
+      if (publishedAt > oneHourAgo) {
+        groups['Last Hour'].push(item);
+      } else if (publishedAt > sixHoursAgo) {
+        groups['Last 6 Hours'].push(item);
+      } else if (publishedAt > twentyFourHoursAgo) {
+        groups['Last 24 Hours'].push(item);
+      } else if (publishedAt > fortyEightHoursAgo) {
+        groups['Last 48 Hours'].push(item);
+      } else {
+        groups['Older'].push(item);
+      }
+    });
     
-    const diffInDays = Math.floor(diffInHours / 24);
-    return `${diffInDays}d ago`;
+    return groups;
   };
 
   const getBloFinTradingUrl = (coin: string) => {
     return `https://www.blofin.com/en/futures/${coin.toLowerCase()}usdt`;
   };
 
-  // Filter news based on criteria
-  const filteredNews = news.filter((item: NewsItem) => {
-    const matchesPriority = priorityFilter === "all" || item.priority?.toString() === priorityFilter;
-    const matchesCoin = !coinFilter || (item.coins && item.coins.some(coin => 
-      coin.toLowerCase().includes(coinFilter.toLowerCase())
-    ));
-    const matchesSearch = !searchQuery || 
-      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.source?.toLowerCase().includes(searchQuery.toLowerCase());
+  // Filter news
+  const filteredNews = news.filter((item) => {
+    // Priority filter
+    if (priorityFilter !== "all" && item.priority !== parseInt(priorityFilter)) {
+      return false;
+    }
     
-    return matchesPriority && matchesCoin && matchesSearch;
+    // Coin filter
+    if (coinFilter && !item.coins.some(coin => 
+      coin.toLowerCase().includes(coinFilter.toLowerCase())
+    )) {
+      return false;
+    }
+    
+    // Search filter
+    if (searchQuery && !item.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        !item.content?.toLowerCase().includes(searchQuery.toLowerCase())) {
+      return false;
+    }
+    
+    return true;
   });
 
-  // Get unique coins for filter dropdown
-  const allCoins = Array.from(new Set(news.flatMap((item: NewsItem) => item.coins || []))).sort();
+  const groupedNews = groupNewsByPeriod(filteredNews);
 
   return (
-    <div className="flex-1 overflow-hidden">
-      <Header 
-        title="Velo News Dashboard"
-        description="Real-time cryptocurrency news with ultra-fast 10-second refresh rate"
-        onRefresh={handleRefresh}
-      />
+    <div className="min-h-screen bg-background">
+      <Header />
       
-      <div className="p-6 overflow-y-auto h-[calc(100vh-80px)]">
+      <main className="container mx-auto p-6">
         {/* News Controls */}
         <Card className="mb-6">
           <CardHeader>

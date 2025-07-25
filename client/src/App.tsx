@@ -9,7 +9,7 @@ import UnlockSchedule from "@/pages/unlock-schedule";
 import RevenueAnalysis from "@/pages/revenue-analysis";
 import MonteCarlo from "@/pages/monte-carlo";
 import SuccessStories from "@/pages/success-stories";
-import VeloNews from "@/pages/velo-news";
+import VeloNews from "@/pages/velo-news-live";
 import NotFound from "@/pages/not-found";
 import Sidebar from "@/components/layout/sidebar";
 

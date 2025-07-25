@@ -1,6 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { WebSocketServer } from "ws";
+import { createServer } from "http";
 
 const app = express();
 app.use(express.json());
@@ -37,6 +39,44 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Create HTTP server
+  const httpServer = createServer(app);
+  
+  // Create WebSocket server
+  const wss = new WebSocketServer({ server: httpServer });
+  
+  // Setup WebSocket handlers
+  wss.on("connection", (ws) => {
+    log("WebSocket client connected");
+    
+    ws.on("message", (message) => {
+      try {
+        const data = JSON.parse(message.toString());
+        if (data.type === "subscribe" && data.channel === "news") {
+          ws.send(JSON.stringify({ type: "connected", channel: "news" }));
+          
+          // Start streaming news updates
+          // This will be implemented in the Velo service
+          (app as any).veloStreamClients = (app as any).veloStreamClients || new Set();
+          (app as any).veloStreamClients.add(ws);
+        }
+      } catch (error) {
+        console.error("WebSocket message error:", error);
+      }
+    });
+    
+    ws.on("close", () => {
+      log("WebSocket client disconnected");
+      if ((app as any).veloStreamClients) {
+        (app as any).veloStreamClients.delete(ws);
+      }
+    });
+    
+    ws.on("error", (error) => {
+      console.error("WebSocket error:", error);
+    });
+  });
+  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -61,11 +101,7 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
+  httpServer.listen(port, "0.0.0.0", () => {
     log(`serving on port ${port}`);
   });
 })();

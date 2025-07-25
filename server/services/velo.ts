@@ -1,3 +1,5 @@
+import WebSocket from 'ws';
+
 export interface VeloNewsItem {
   id: string;
   title: string;
@@ -21,7 +23,10 @@ export interface VeloMarketData {
 
 export class VeloService {
   private apiKey: string;
-  private baseUrl = 'https://api.velo.io/v1'; // Placeholder URL
+  private baseUrl = 'https://api.velodata.app/v1';
+  private wsUrl = 'wss://api.velodata.app/v1/news/stream';
+  private ws: WebSocket | null = null;
+  private streamCallbacks: Set<(data: any) => void> = new Set();
 
   constructor() {
     this.apiKey = process.env.VELO_API_KEY || '';
@@ -65,6 +70,25 @@ export class VeloService {
       return response.data || response.news || [];
     } catch (error) {
       console.error('Error fetching Velo news:', error);
+      return [];
+    }
+  }
+
+  async getHistoricalNews(hours: number = 48): Promise<VeloNewsItem[]> {
+    // Calculate timestamp for 48 hours ago
+    const since = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+    const endpoint = `/news?since=${since}&limit=1000`;
+    
+    try {
+      const response = await this.makeRequest(endpoint);
+      const news = response.data || response.news || [];
+      
+      // Sort by published_at in descending order (newest first)
+      return news.sort((a: VeloNewsItem, b: VeloNewsItem) => 
+        new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
+      );
+    } catch (error) {
+      console.error('Error fetching historical Velo news:', error);
       return [];
     }
   }
@@ -167,6 +191,89 @@ export class VeloService {
   // Helper method to get BloFin trading URL
   getBloFinTradingUrl(symbol: string): string {
     return `https://www.blofin.com/en/futures/${symbol.toLowerCase()}usdt`;
+  }
+
+  // WebSocket streaming methods
+  async startNewsStream(onMessage: (data: any) => void): Promise<void> {
+    if (!this.apiKey) {
+      console.warn('Cannot start news stream without API key');
+      return;
+    }
+
+    // Temporarily disable WebSocket connection until we get the correct endpoint
+    console.log('WebSocket streaming temporarily disabled - using REST API polling');
+    return;
+
+    /*
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      console.log('WebSocket already connected');
+      this.streamCallbacks.add(onMessage);
+      return;
+    }
+
+    this.streamCallbacks.add(onMessage);
+
+    try {
+      this.ws = new WebSocket(this.wsUrl, {
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`
+        }
+      });
+
+      this.ws.on('open', () => {
+        console.log('Velo WebSocket connected');
+        this.ws?.send(JSON.stringify({ action: 'subscribe', channel: 'news' }));
+      });
+
+      this.ws.on('message', (data: Buffer) => {
+        try {
+          const message = JSON.parse(data.toString());
+          
+          // Broadcast to all callbacks
+          this.streamCallbacks.forEach(callback => {
+            try {
+              callback(message);
+            } catch (error) {
+              console.error('Error in stream callback:', error);
+            }
+          });
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error);
+        }
+      });
+
+      this.ws.on('error', (error) => {
+        console.error('Velo WebSocket error:', error);
+      });
+
+      this.ws.on('close', () => {
+        console.log('Velo WebSocket disconnected');
+        this.ws = null;
+        
+        // Attempt to reconnect after 5 seconds
+        setTimeout(() => {
+          if (this.streamCallbacks.size > 0) {
+            console.log('Attempting to reconnect Velo WebSocket...');
+            this.streamCallbacks.forEach(callback => {
+              this.startNewsStream(callback);
+            });
+          }
+        }, 5000);
+      });
+
+    } catch (error) {
+      console.error('Error starting news stream:', error);
+    }
+    */
+  }
+
+  stopNewsStream(onMessage: (data: any) => void): void {
+    this.streamCallbacks.delete(onMessage);
+    
+    if (this.streamCallbacks.size === 0 && this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
   }
 
   private getMockData(endpoint: string): any {
