@@ -161,24 +161,88 @@ export default function NarrativeTracker() {
   };
 
   return (
-    <div className="flex-1 overflow-hidden bg-gray-950 text-white">
+    <div className="flex-1 overflow-hidden bg-gray-50 dark:bg-gray-950">
       <Header 
-        title="MCap-Weighted Category Performance"
+        title="Narrative Performance Tracker"
         description="Real-time cryptocurrency narrative performance tracking"
       />
       
-      <div className="p-6 overflow-y-auto h-[calc(100vh-80px)]">
-        <Card className="bg-gray-900 border-gray-800">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-xl font-bold text-white">
-                MCap-Weighted Category Performance
-              </CardTitle>
-              <div className="flex items-center gap-2 text-sm text-gray-400">
-                <Activity className="w-4 h-4" />
-                DefiLlama
+      <div className="p-6 overflow-y-auto h-[calc(100vh-80px)] bg-gray-50 dark:bg-gray-950">
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Top Performing Narratives - Left Column */}
+          <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 shadow-lg">
+            <CardHeader className="pb-6">
+              <div className="flex items-center gap-3">
+                <TrendingUp className="w-5 h-5 text-green-600" />
+                <div>
+                  <CardTitle className="text-xl font-bold text-gray-900 dark:text-white">
+                    Top Performing Narratives
+                  </CardTitle>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    Best performing crypto narratives from DeFiLlama Pro tracker
+                  </p>
+                </div>
               </div>
-            </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {isLoading ? (
+                <div className="space-y-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="h-16 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse"></div>
+                  ))}
+                </div>
+              ) : (
+                chartData.slice(0, 5).map((narrative: any, index: number) => (
+                  <div key={narrative.fullName} className="flex items-center justify-between p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <div className="flex items-center gap-4">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-sm font-bold shadow-sm">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-gray-900 dark:text-white text-base">
+                          {narrative.fullName}
+                        </h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          30d: <span className="text-green-600 dark:text-green-400 font-medium">
+                            +{narrative.change30d.toFixed(2)}%
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {narrative.value.toFixed(2)}%
+                      </p>
+                      <div className="flex items-center gap-1 text-sm justify-end">
+                        <span className="text-green-600 dark:text-green-400 font-medium">
+                          +{narrative.change1d.toFixed(2)}% 1d
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          {/* MCap-Weighted Chart - Right Column */}
+          <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 shadow-lg">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <BarChart3 className="w-5 h-5 text-blue-600" />
+                  <div>
+                    <CardTitle className="text-xl font-bold text-gray-900 dark:text-white">
+                      MCap-Weighted Category Performance
+                    </CardTitle>
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      <Activity className="w-4 h-4" />
+                      <span>DeFiLlama Pro</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             
             {/* Controls */}
             <div className="flex items-center justify-between mt-4">
@@ -265,69 +329,98 @@ export default function NarrativeTracker() {
             </div>
           </CardHeader>
 
-          <CardContent className="pt-0">
-            {isLoading ? (
-              <div className="h-96 flex items-center justify-center">
-                <div className="text-gray-400">Loading narrative data...</div>
-              </div>
-            ) : (
-              <div className="bg-gray-950 rounded-lg p-4">
-                {renderChart()}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Performance Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-          <Card className="bg-gray-900 border-gray-800">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-gray-400 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" />
-                Top Performer
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {chartData[0] && (
-                <div>
-                  <p className="text-lg font-bold text-white">{chartData[0].fullName}</p>
-                  <p className="text-2xl font-bold text-green-400">{chartData[0].value.toFixed(2)}%</p>
-                  <p className="text-sm text-gray-400">
-                    24h: <span className="text-green-400">+{chartData[0].change1d.toFixed(2)}%</span>
-                  </p>
+            <CardContent className="pt-0">
+              {isLoading ? (
+                <div className="h-96 flex items-center justify-center">
+                  <div className="text-gray-600 dark:text-gray-400">Loading narrative data...</div>
+                </div>
+              ) : (
+                <div className="bg-gray-50 dark:bg-gray-950 rounded-lg p-4">
+                  {renderChart()}
                 </div>
               )}
             </CardContent>
           </Card>
+        </div>
 
-          <Card className="bg-gray-900 border-gray-800">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-gray-400">
-                Average Performance
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-white">
-                {chartData.length > 0 ? (chartData.reduce((acc: number, item: any) => acc + item.value, 0) / chartData.length).toFixed(2) : '0.00'}%
-              </p>
-              <p className="text-sm text-gray-400">Across {chartData.length} categories</p>
-            </CardContent>
-          </Card>
+        {/* Bottom Analytics Section */}
+        <div className="mt-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {/* Performance Summary Cards */}
+            <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 shadow-lg">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
+                    <TrendingUp className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Top Performer</p>
+                  </div>
+                </div>
+                {chartData[0] && (
+                  <div>
+                    <p className="text-lg font-bold text-gray-900 dark:text-white">{chartData[0].fullName}</p>
+                    <p className="text-3xl font-bold text-green-600 dark:text-green-400">{chartData[0].value.toFixed(2)}%</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      24h: <span className="text-green-600 dark:text-green-400 font-medium">+{chartData[0].change1d.toFixed(2)}%</span>
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-          <Card className="bg-gray-900 border-gray-800">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-gray-400">
-                Data Source
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-lg font-medium text-white">DeFiLlama Pro</p>
-              <p className="text-sm text-gray-400">Real-time market cap weighted</p>
-              <Badge variant="outline" className="mt-2 text-green-400 border-green-400">
-                Live Data
-              </Badge>
-            </CardContent>
-          </Card>
+            <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 shadow-lg">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+                    <BarChart3 className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Average Performance</p>
+                  </div>
+                </div>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                  {chartData.length > 0 ? (chartData.reduce((acc: number, item: any) => acc + item.value, 0) / chartData.length).toFixed(2) : '0.00'}%
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Across {chartData.length} categories</p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 shadow-lg">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center">
+                    <Activity className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Data Source</p>
+                  </div>
+                </div>
+                <p className="text-lg font-bold text-gray-900 dark:text-white">DeFiLlama Pro</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Real-time market cap weighted</p>
+                <Badge variant="outline" className="mt-2 text-green-600 dark:text-green-400 border-green-600 dark:border-green-400">
+                  Live Data
+                </Badge>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 shadow-lg">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center">
+                    <TrendingUp className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Categories Tracked</p>
+                  </div>
+                </div>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white">{chartData.length}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Last updated: <span className="font-medium">2 mins ago</span>
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>
