@@ -5,6 +5,7 @@ const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: "fas fa-tachometer-alt" },
   { name: "Token Failures", href: "/failures", icon: "fas fa-exclamation-triangle" },
   { name: "Unlock Schedule", href: "/unlocks", icon: "fas fa-unlock" },
+  { name: "Narrative Tracker", href: "/narratives", icon: "fas fa-chart-bar" },
   { name: "Revenue Analysis", href: "/revenue", icon: "fas fa-money-bill-wave" },
   { name: "Monte Carlo", href: "/monte-carlo", icon: "fas fa-dice" },
   { name: "Success Stories", href: "/success-stories", icon: "fas fa-trophy" },

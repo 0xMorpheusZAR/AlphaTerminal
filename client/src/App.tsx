@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Dashboard from "@/pages/dashboard";
 import TokenFailures from "@/pages/token-failures";
 import UnlockSchedule from "@/pages/unlock-schedule";
+import NarrativeTracker from "@/pages/narrative-tracker";
 import RevenueAnalysis from "@/pages/revenue-analysis";
 import MonteCarlo from "@/pages/monte-carlo";
 import SuccessStories from "@/pages/success-stories";
@@ -23,6 +24,7 @@ function Router() {
           <Route path="/dashboard" component={Dashboard} />
           <Route path="/failures" component={TokenFailures} />
           <Route path="/unlocks" component={UnlockSchedule} />
+          <Route path="/narratives" component={NarrativeTracker} />
           <Route path="/revenue" component={RevenueAnalysis} />
           <Route path="/monte-carlo" component={MonteCarlo} />
           <Route path="/success-stories" component={SuccessStories} />
