@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import Header from "@/components/layout/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Cell } from "recharts";
-import { TrendingUp, BarChart3, Activity } from "lucide-react";
+import { TrendingUp, BarChart3, Activity, RefreshCw, Clock } from "lucide-react";
+import { useNarrativeData } from "@/hooks/use-narrative-data";
 
 interface NarrativeData {
   name: string;
@@ -23,10 +23,14 @@ export default function NarrativeTracker() {
   const [denominator, setDenominator] = useState("$");
   const [chartType, setChartType] = useState("Barchart");
 
-  const { data: narrativeData = [], isLoading } = useQuery({
-    queryKey: ['/api/narratives/performance'],
-    queryFn: () => fetch('/api/narratives/performance').then(res => res.json()),
-  });
+  const { 
+    narrativeData, 
+    isLoading, 
+    error, 
+    refreshData, 
+    getLastUpdateTime, 
+    isDataFresh 
+  } = useNarrativeData();
 
   // Transform data for chart display
   const chartData = narrativeData
@@ -165,9 +169,47 @@ export default function NarrativeTracker() {
       <Header 
         title="Narrative Performance Tracker"
         description="Real-time cryptocurrency narrative performance tracking"
+        onRefresh={refreshData}
+        showRefreshButton={true}
       />
       
       <div className="p-6 overflow-y-auto h-[calc(100vh-80px)] bg-gray-50 dark:bg-gray-950">
+        {/* Status Indicator */}
+        <div className="mb-6">
+          <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 shadow-sm">
+            <CardContent className="py-3 px-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`w-2 h-2 rounded-full ${isDataFresh() ? 'bg-green-500' : 'bg-yellow-500'} animate-pulse`} />
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    Last updated: {getLastUpdateTime()}
+                  </span>
+                  {error && (
+                    <Badge variant="destructive" className="text-xs">
+                      Connection Error
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={refreshData}
+                    disabled={isLoading}
+                    className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  >
+                    <RefreshCw className={`w-4 h-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </Button>
+                  <div className="text-xs text-gray-500 dark:text-gray-500">
+                    Auto-refresh: 2min
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Top Performing Narratives - Left Column */}
@@ -416,7 +458,7 @@ export default function NarrativeTracker() {
                 </div>
                 <p className="text-3xl font-bold text-gray-900 dark:text-white">{chartData.length}</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Last updated: <span className="font-medium">2 mins ago</span>
+                  Last updated: <span className="font-medium">{getLastUpdateTime()}</span>
                 </p>
               </CardContent>
             </Card>

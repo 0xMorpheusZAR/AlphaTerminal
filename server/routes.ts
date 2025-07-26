@@ -261,6 +261,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Force refresh narratives (bypass cache)
+  app.post("/api/narratives/refresh", async (req, res) => {
+    try {
+      const freshData = await defiLlamaNarrativesService.forceRefreshNarrativePerformance();
+      res.json({ 
+        message: `Refreshed ${freshData.length} narratives`,
+        timestamp: new Date().toISOString(),
+        data: freshData
+      });
+    } catch (error) {
+      console.error("Force refresh error:", error);
+      res.status(500).json({ message: "Failed to force refresh narratives" });
+    }
+  });
+
+  // Get cache statistics
+  app.get("/api/narratives/cache-stats", (req, res) => {
+    try {
+      const stats = defiLlamaNarrativesService.getCacheStats();
+      res.json({
+        ...stats,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Cache stats error:", error);
+      res.status(500).json({ message: "Failed to get cache statistics" });
+    }
+  });
+
   app.get("/api/narratives/history", async (req, res) => {
     try {
       const { days = 30 } = req.query;

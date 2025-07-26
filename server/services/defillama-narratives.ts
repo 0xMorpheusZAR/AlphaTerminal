@@ -15,6 +15,9 @@ export interface NarrativeMetrics {
 export class DefiLlamaNarrativesService {
   private apiKey: string;
   private baseUrl = 'https://pro-api.llama.fi';
+  private cache: Map<string, { data: any; timestamp: number }> = new Map();
+  private rateLimitDelay = 1000; // 1 second between requests
+  private lastRequestTime = 0;
 
   constructor() {
     this.apiKey = process.env.DEFILLAMA_PRO_API_KEY || '';
@@ -23,27 +26,81 @@ export class DefiLlamaNarrativesService {
     }
   }
 
+  private isCacheValid(key: string, maxAge: number = 2 * 60 * 1000): boolean {
+    const cached = this.cache.get(key);
+    if (!cached) return false;
+    return (Date.now() - cached.timestamp) < maxAge;
+  }
+
+  private setCache(key: string, data: any): void {
+    this.cache.set(key, { data, timestamp: Date.now() });
+  }
+
+  private getCache(key: string): any {
+    const cached = this.cache.get(key);
+    return cached ? cached.data : null;
+  }
+
+  private async enforceRateLimit(): Promise<void> {
+    const timeSinceLastRequest = Date.now() - this.lastRequestTime;
+    if (timeSinceLastRequest < this.rateLimitDelay) {
+      const waitTime = this.rateLimitDelay - timeSinceLastRequest;
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    this.lastRequestTime = Date.now();
+  }
+
   private async makeRequest(endpoint: string, options: RequestInit = {}): Promise<any> {
+    // Check cache first
+    const cacheKey = `${endpoint}${JSON.stringify(options)}`;
+    if (this.isCacheValid(cacheKey)) {
+      console.log(`📊 Using cached narrative data for ${endpoint}`);
+      return this.getCache(cacheKey);
+    }
+
     if (!this.apiKey) {
       console.log('📊 Using local narrative data (no Pro API key)');
-      return this.getLocalNarrativeData();
+      const localData = this.getLocalNarrativeData();
+      this.setCache(cacheKey, localData);
+      return localData;
     }
+
+    // Enforce rate limiting
+    await this.enforceRateLimit();
 
     const url = `${this.baseUrl}${endpoint}`;
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-    });
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+        timeout: 10000, // 10 second timeout
+      });
 
-    if (!response.ok) {
-      throw new Error(`DeFiLlama Pro API error: ${response.status} ${response.statusText}`);
+      if (!response.ok) {
+        if (response.status === 429) {
+          console.warn('🚫 DeFiLlama API rate limit exceeded, using cached/local data');
+          const localData = this.getLocalNarrativeData();
+          this.setCache(cacheKey, localData);
+          return localData;
+        }
+        throw new Error(`DeFiLlama Pro API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      this.setCache(cacheKey, data);
+      console.log(`✅ Fresh data fetched from DeFiLlama Pro API: ${endpoint}`);
+      return data;
+    } catch (error) {
+      console.error(`❌ API request failed for ${endpoint}:`, error);
+      // Fallback to local data
+      const localData = this.getLocalNarrativeData();
+      this.setCache(cacheKey, localData);
+      return localData;
     }
-
-    return response.json();
   }
 
   async getNarrativePerformance(): Promise<NarrativeMetrics[]> {
@@ -260,6 +317,26 @@ export class DefiLlamaNarrativesService {
     return data
       .sort((a, b) => a.value - b.value)
       .slice(0, limit);
+  }
+
+  // Clear cache for fresh data
+  clearCache(): void {
+    this.cache.clear();
+    console.log('🧹 Narrative data cache cleared');
+  }
+
+  // Get cache statistics
+  getCacheStats(): { size: number; keys: string[] } {
+    return {
+      size: this.cache.size,
+      keys: Array.from(this.cache.keys())
+    };
+  }
+
+  // Force refresh narrative data (bypasses cache)
+  async forceRefreshNarrativePerformance(): Promise<NarrativeMetrics[]> {
+    this.clearCache();
+    return this.getNarrativePerformance();
   }
 }
 
