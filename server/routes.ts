@@ -5,6 +5,7 @@ import { coinGeckoService } from "./services/coingecko";
 import { veloService } from "./services/velo";
 import { duneService } from "./services/dune";
 import { defiLlamaService } from "./services/defillama";
+import { defiLlamaNarrativesService } from "./services/defillama-narratives";
 import { monteCarloService } from "./services/monte-carlo";
 import { insertTokenSchema, insertNewsItemSchema, insertDefiProtocolSchema, insertHyperliquidMetricsSchema } from "@shared/schema";
 import { z } from "zod";
@@ -224,6 +225,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Historical news fetch error:", error);
       res.status(500).json({ message: "Failed to fetch historical news" });
+    }
+  });
+
+  // Narrative tracker routes for DeFiLlama
+  app.get("/api/narratives/performance", async (req, res) => {
+    try {
+      const narratives = await defiLlamaNarrativesService.getNarrativePerformance();
+      res.json(narratives);
+    } catch (error) {
+      console.error("Narrative performance fetch error:", error);
+      res.status(500).json({ message: "Failed to fetch narrative performance" });
+    }
+  });
+
+  app.get("/api/narratives/top-performers", async (req, res) => {
+    try {
+      const { limit = 5 } = req.query;
+      const topPerformers = defiLlamaNarrativesService.getTopPerformers(Number(limit));
+      res.json(topPerformers);
+    } catch (error) {
+      console.error("Top performers fetch error:", error);
+      res.status(500).json({ message: "Failed to fetch top performers" });
+    }
+  });
+
+  app.get("/api/narratives/worst-performers", async (req, res) => {
+    try {
+      const { limit = 5 } = req.query;
+      const worstPerformers = defiLlamaNarrativesService.getWorstPerformers(Number(limit));
+      res.json(worstPerformers);
+    } catch (error) {
+      console.error("Worst performers fetch error:", error);
+      res.status(500).json({ message: "Failed to fetch worst performers" });
+    }
+  });
+
+  app.get("/api/narratives/history", async (req, res) => {
+    try {
+      const { days = 30 } = req.query;
+      const history = await defiLlamaNarrativesService.getNarrativeHistory(Number(days));
+      res.json(history);
+    } catch (error) {
+      console.error("Narrative history fetch error:", error);
+      res.status(500).json({ message: "Failed to fetch narrative history" });
     }
   });
 
