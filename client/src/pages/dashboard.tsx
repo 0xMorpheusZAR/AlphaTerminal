@@ -150,6 +150,34 @@ export default function Dashboard() {
 
         {/* Hyperliquid Success Story */}
         <HyperliquidSuccess />
+
+        {/* API Status Bar */}
+        <Card className="mt-8">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-muted-foreground">API Status</span>
+                <div className="flex space-x-2">
+                  <div className="flex items-center space-x-1">
+                    <div className="w-2 h-2 bg-success rounded-full" title="CoinGecko Pro"></div>
+                    <span className="text-xs text-muted-foreground">CoinGecko Pro</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <div className="w-2 h-2 bg-success rounded-full" title="Velo Data"></div>
+                    <span className="text-xs text-muted-foreground">Velo Data</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <div className="w-2 h-2 bg-warning rounded-full" title="Dune Analytics"></div>
+                    <span className="text-xs text-muted-foreground">Dune Analytics</span>
+                  </div>
+                </div>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Last update: <span>2 mins ago</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
