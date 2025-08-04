@@ -274,8 +274,4 @@ export class MockStorage implements IStorage {
     }
   }
 
-  async getLatestSimulation(tokenId: string): Promise<MonteCarloSimulation | undefined> {
-    const sims = await this.getMonteCarloSimulations(tokenId);
-    return sims.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
-  }
 }
