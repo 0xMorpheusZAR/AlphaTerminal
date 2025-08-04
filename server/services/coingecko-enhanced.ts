@@ -1,34 +1,16 @@
 import { coinGeckoRateLimiter } from './api-rate-limiter';
 import { cacheConfig, cacheKeys } from './cache-manager';
-import axios, { AxiosInstance } from 'axios';
+import { HttpClient, apiHttpClient } from '../utils/http-client';
+import { ApiError, logError } from '../utils/error-handler';
+import { TokenMetrics, HistoricalData, ApiResponse } from '../../shared/types/api.types';
 
-export interface CoinGeckoPrice {
-  id: string;
-  symbol: string;
-  name: string;
-  current_price: number;
-  market_cap: number;
-  market_cap_rank: number;
-  fully_diluted_valuation: number;
-  total_volume: number;
-  high_24h: number;
-  low_24h: number;
-  price_change_24h: number;
-  price_change_percentage_24h: number;
+// Use shared types from api.types.ts
+export interface CoinGeckoPrice extends TokenMetrics {
   price_change_percentage_7d_in_currency: number;
   price_change_percentage_30d_in_currency: number;
   price_change_percentage_1y_in_currency: number;
   market_cap_change_24h: number;
   market_cap_change_percentage_24h: number;
-  circulating_supply: number;
-  total_supply: number;
-  max_supply: number;
-  ath: number;
-  ath_change_percentage: number;
-  ath_date: string;
-  atl: number;
-  atl_change_percentage: number;
-  atl_date: string;
   roi: any;
   last_updated: string;
 }
@@ -42,9 +24,9 @@ export interface CoinGeckoHistorical {
 export class EnhancedCoinGeckoService {
   private apiKey: string;
   private baseUrl = 'https://pro-api.coingecko.com/api/v3';
-  private axios: AxiosInstance;
-  private lastRequestTime = 0;
+  private httpClient: HttpClient;
   private requestCount = 0;
+  private serviceName = 'CoinGecko';
 
   constructor() {
     this.apiKey = process.env.COINGECKO_PRO_API_KEY || process.env.COINGECKO_API_KEY || '';
@@ -53,44 +35,23 @@ export class EnhancedCoinGeckoService {
       console.warn('⚠️  CoinGecko API key not found. API calls will return mock data.');
     }
 
-    // Configure axios with retry logic
-    this.axios = axios.create({
+    // Configure HTTP client with retry logic and circuit breaker
+    this.httpClient = new HttpClient({
       baseURL: this.baseUrl,
       headers: {
         'X-Cg-Pro-Api-Key': this.apiKey,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
+        'Accept': 'application/json'
       },
-      timeout: 10000, // 10 second timeout
-      validateStatus: (status) => status < 500 // Don't throw on 4xx errors
-    });
-
-    // Add request interceptor for logging
-    this.axios.interceptors.request.use((config) => {
-      this.requestCount++;
-      console.log(`[CoinGecko API] Request #${this.requestCount}: ${config.method?.toUpperCase()} ${config.url}`);
-      return config;
-    });
-
-    // Add response interceptor for error handling
-    this.axios.interceptors.response.use(
-      (response) => {
-        const remaining = response.headers['x-ratelimit-remaining'];
-        if (remaining) {
-          console.log(`[CoinGecko API] Rate limit remaining: ${remaining}`);
-        }
-        return response;
-      },
-      async (error) => {
-        if (error.response?.status === 429) {
-          console.warn('[CoinGecko API] Rate limit exceeded. Waiting...');
-          const retryAfter = parseInt(error.response.headers['retry-after'] || '60');
-          await this.delay(retryAfter * 1000);
-          return this.axios.request(error.config);
-        }
-        throw error;
+      timeout: 30000, // 30 second timeout
+      retry: {
+        maxRetries: 5,
+        initialDelay: 2000,
+        maxDelay: 60000,
+        backoffMultiplier: 2,
+        retryableStatuses: [408, 429, 500, 502, 503, 504],
+        retryableErrors: ['ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND']
       }
-    );
+    });
   }
 
   private async makeRequest<T>(endpoint: string, cacheKey?: string, cacheTTL?: number): Promise<T> {
