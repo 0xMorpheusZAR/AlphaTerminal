@@ -7,6 +7,7 @@ import { duneService } from "./services/dune";
 import { defiLlamaService } from "./services/defillama";
 import { defiLlamaNarrativesService } from "./services/defillama-narratives";
 import { monteCarloService } from "./services/monte-carlo";
+import { advancedAnalyticsService } from "./services/advanced-analytics";
 import { insertTokenSchema, insertNewsItemSchema, insertDefiProtocolSchema, insertHyperliquidMetricsSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -452,6 +453,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Dashboard stats error:", error);
       res.status(500).json({ message: "Failed to fetch dashboard stats" });
+    }
+  });
+
+  // Advanced Analytics endpoints
+  
+  // 1) Multi-asset market-cap heat-map
+  app.get("/api/analytics/heatmap", async (req, res) => {
+    try {
+      const data = await advancedAnalyticsService.getMarketCapHeatMap();
+      res.json(data);
+    } catch (error) {
+      console.error("Heatmap error:", error);
+      res.status(500).json({ message: "Failed to fetch heatmap data" });
+    }
+  });
+
+  // 2) BTC vs ETH performance overlay
+  app.get("/api/analytics/btc-eth-performance", async (req, res) => {
+    try {
+      const data = await advancedAnalyticsService.getBTCvsETHPerformance();
+      res.json(data);
+    } catch (error) {
+      console.error("Performance data error:", error);
+      res.status(500).json({ message: "Failed to fetch performance data" });
+    }
+  });
+
+  // 3) Candlestick + volume chart
+  app.get("/api/analytics/candlestick/:coinId", async (req, res) => {
+    try {
+      const { coinId } = req.params;
+      const data = await advancedAnalyticsService.getCandlestickData(coinId);
+      res.json(data);
+    } catch (error) {
+      console.error("Candlestick data error:", error);
+      res.status(500).json({ message: "Failed to fetch candlestick data" });
+    }
+  });
+
+  // 4) Sector rotation dashboard
+  app.get("/api/analytics/sector-rotation", async (req, res) => {
+    try {
+      const data = await advancedAnalyticsService.getSectorRotation();
+      res.json(data);
+    } catch (error) {
+      console.error("Sector rotation error:", error);
+      res.status(500).json({ message: "Failed to fetch sector rotation data" });
+    }
+  });
+
+  // 5) On-chain liquidity spikes
+  app.get("/api/analytics/liquidity-spikes", async (req, res) => {
+    try {
+      const data = await advancedAnalyticsService.getLiquiditySpikes();
+      res.json(data);
+    } catch (error) {
+      console.error("Liquidity spikes error:", error);
+      res.status(500).json({ message: "Failed to fetch liquidity spike data" });
     }
   });
 

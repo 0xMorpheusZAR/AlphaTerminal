@@ -47,6 +47,15 @@ Token Tracker is a comprehensive cryptocurrency analytics platform designed to h
 - **Market Share Analysis**: Competitive positioning data
 - **Growth Trends**: Historical performance visualization
 
+### 🔥 Advanced Analytics (NEW)
+Powered by CoinGecko Pro MCP integration:
+
+1. **Market Cap Heat Map** - Real-time visualization of top 50 cryptocurrencies
+2. **BTC vs ETH Performance** - Historical comparison since 2015 with dominance overlay
+3. **Dynamic Candlestick Charts** - 30-day OHLC data with volume for any cryptocurrency
+4. **Sector Rotation Dashboard** - Track which crypto narratives are trending
+5. **Liquidity Spike Monitor** - Identify DEX pools with explosive volume growth
+
 ## 🛠️ Technology Stack
 
 ### Frontend

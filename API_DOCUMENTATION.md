@@ -23,6 +23,136 @@ The API does not require authentication for public endpoints. The application in
 
 ## API Endpoints
 
+### Advanced Analytics
+
+These endpoints provide sophisticated market analysis using CoinGecko Pro data.
+
+#### 1. Multi-Asset Market Cap Heat Map
+```http
+GET /api/analytics/heatmap
+```
+
+Returns top 50 cryptocurrencies with market cap and 24h price change data for heat map visualization.
+
+**Response:**
+```json
+{
+  "data": [
+    {
+      "id": "bitcoin",
+      "symbol": "btc",
+      "market_cap": 880000000000,
+      "price_change_percentage_24h": 2.5,
+      "total_volume": 25000000000
+    }
+  ]
+}
+```
+
+#### 2. BTC vs ETH Performance Overlay
+```http
+GET /api/analytics/btc-eth-performance
+```
+
+Returns historical performance data for Bitcoin and Ethereum since 2015, normalized for comparison.
+
+**Response:**
+```json
+{
+  "btc": [
+    {
+      "ts": 1420070400000,
+      "price": 45000,
+      "normalized": 1.5
+    }
+  ],
+  "eth": [
+    {
+      "ts": 1438905600000,
+      "price": 2500,
+      "normalized": 1.8
+    }
+  ],
+  "btc_dominance": [
+    {
+      "ts": 1420070400000,
+      "dominance": 45.5
+    }
+  ]
+}
+```
+
+#### 3. Candlestick Chart Data
+```http
+GET /api/analytics/candlestick/:coinId
+```
+
+Returns 30-day OHLC and volume data for any cryptocurrency.
+
+**Parameters:**
+- `coinId` - CoinGecko coin ID (e.g., "bitcoin", "ethereum")
+
+**Response:**
+```json
+{
+  "ohlc": [
+    [1704067200000, 45000, 46000, 44500, 45500]
+  ],
+  "volumes": [
+    [1704067200000, 25000000000]
+  ]
+}
+```
+
+#### 4. Sector Rotation Dashboard
+```http
+GET /api/analytics/sector-rotation
+```
+
+Returns top performing cryptocurrency sectors with their leading coins.
+
+**Response:**
+```json
+[
+  {
+    "category_id": "defi",
+    "category_name": "DeFi",
+    "market_cap_change_24h": 5.2,
+    "coins": [
+      {
+        "id": "uniswap",
+        "symbol": "UNI",
+        "market_cap": 5000000000,
+        "price_change_percentage_24h": 4.5
+      }
+    ]
+  }
+]
+```
+
+#### 5. On-Chain Liquidity Spikes
+```http
+GET /api/analytics/liquidity-spikes
+```
+
+Returns trending liquidity pools with significant volume increases.
+
+**Response:**
+```json
+[
+  {
+    "pool_address": "0x1234...5678",
+    "network": "ethereum",
+    "dex_name": "Uniswap V3",
+    "liquidity_usd": 2500000,
+    "volume_24h_usd": 1800000,
+    "volume_delta_pct": 350,
+    "token0_symbol": "USDC",
+    "token1_symbol": "PEPE"
+  }
+]
+```
+
 ### Dashboard
 
 #### Get Dashboard Statistics
