@@ -17,14 +17,30 @@ import { useQuery } from '@tanstack/react-query';
 import { Line, Bar, Doughnut, Radar, Bubble } from 'react-chartjs-2';
 import { api } from '@/lib/api';
 import MagicUIGenerator from '@/components/coingecko/magic-ui-generator';
+import { LiveDataIndicator, MultiServiceIndicator, useApiStatus } from '@/components/ui/live-data-indicator';
 
 export default function CoinGeckoProShowcase() {
   const [selectedMetric, setSelectedMetric] = useState('market-overview');
   const [timeframe, setTimeframe] = useState('24h');
   const [hoveredFeature, setHoveredFeature] = useState<string | null>(null);
 
+  // Track API status for all services
+  const coinGeckoStatus = useApiStatus('CoinGecko', '/api/coingecko-pro/health');
+  const whaleAlertStatus = useApiStatus('Whale Alert', '/api/whale-alert/health');
+  const veloStatus = useApiStatus('Velo', '/api/velo/health');
+  const openAIStatus = useApiStatus('OpenAI', '/api/ai/health');
+  const defiLlamaStatus = useApiStatus('DefiLlama', '/api/defillama/health');
+
+  const apiServices = [
+    coinGeckoStatus,
+    whaleAlertStatus,
+    veloStatus,
+    openAIStatus,
+    defiLlamaStatus
+  ];
+
   // Fetch all showcase data
-  const { data: showcaseData, isLoading } = useQuery({
+  const { data: showcaseData, isLoading, dataUpdatedAt } = useQuery({
     queryKey: ['coingecko-pro-showcase', timeframe],
     queryFn: async () => {
       const response = await api.get(`/api/coingecko-pro/showcase?timeframe=${timeframe}`);
@@ -32,6 +48,11 @@ export default function CoinGeckoProShowcase() {
     },
     refetchInterval: 30000, // Refresh every 30 seconds
   });
+
+  // Determine data source based on response
+  const dataSource = showcaseData?.metadata?.source || (showcaseData ? 'live' : 'mock');
+  const isLiveData = dataSource === 'live';
+  const lastUpdate = dataUpdatedAt ? new Date(dataUpdatedAt) : new Date();
 
   const features = [
     {
