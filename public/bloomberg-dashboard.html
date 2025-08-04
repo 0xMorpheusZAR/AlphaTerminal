@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlphaTerminal - Bloomberg Terminal</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000000;
+            color: #00ff00;
+            font-family: 'IBM Plex Mono', 'Courier New', monospace;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Bloomberg-style Ticker Tape */
+        .ticker-tape {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 32px;
+            background: #1a1a1a;
+            border-bottom: 2px solid #ff8800;
+            overflow: hidden;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+        }
+
+        .ticker-content {
+            display: flex;
+            animation: scroll-ticker 40s linear infinite;
+            white-space: nowrap;
+            padding-left: 100%;
+        }
+
+        @keyframes scroll-ticker {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100%); }
+        }
+
+        .ticker-item {
+            display: inline-flex;
+            align-items: center;
+            margin: 0 30px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .ticker-symbol {
+            color: #ff8800;
+            margin-right: 10px;
+            font-weight: 700;
+        }
+
+        .ticker-price {
+            color: #ffffff;
+            margin-right: 8px;
+        }
+
+        .ticker-change {
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+        }
+
+        .ticker-change.up {
+            color: #00ff00;
+        }
+
+        .ticker-change.down {
+            color: #ff0000;
+        }
+
+        .ticker-arrow {
+            margin-right: 3px;
+            font-size: 10px;
+        }
+
+        /* Terminal Header */
+        .terminal-header {
+            background: #0a0a0a;
+            border-bottom: 1px solid #333;
+            padding: 8px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 32px;
+        }
+
+        .terminal-title {
+            font-size: 16px;
+            color: #ff8800;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .terminal-info {
+            display: flex;
+            gap: 30px;
+            font-size: 13px;
+        }
+
+        .info-item {
+            color: #00ff00;
+        }
+
+        .info-label {
+            color: #888;
+            margin-right: 5px;
+        }
+
+        /* Main Dashboard Container */
+        .dashboard-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            overflow: hidden;
+        }
+
+        /* Market Stats Bar */
+        .market-stats {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .stat-card {
+            background: #0a0a0a;
+            border: 1px solid #333;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #ff8800;
+        }
+
+        .stat-label {
+            color: #888;
+            font-size: 11px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            color: #ff8800;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 3px;
+        }
+
+        .stat-change {
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+        }
+
+        .stat-change.positive {
+            color: #00ff00;
+        }
+
+        .stat-change.negative {
+            color: #ff0000;
+        }
+
+        /* Main Content Grid */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 15px;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Market Table */
+        .market-table-container {
+            background: #0a0a0a;
+            border: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .table-header {
+            background: #1a1a1a;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #ff8800;
+        }
+
+        .table-title {
+            color: #ff8800;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .table-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .control-btn {
+            background: #222;
+            border: 1px solid #444;
+            color: #00ff00;
+            padding: 4px 10px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover {
+            background: #333;
+            border-color: #ff8800;
+        }
+
+        .market-table {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .table-row {
+            display: grid;
+            grid-template-columns: 60px 80px 100px 80px 120px 120px 150px;
+            padding: 10px 15px;
+            border-bottom: 1px solid #222;
+            align-items: center;
+            transition: background 0.1s;
+        }
+
+        .table-row:hover {
+            background: #1a1a1a;
+        }
+
+        .table-row.header {
+            background: #111;
+            border-bottom: 1px solid #444;
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .cell {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .cell-rank {
+            color: #666;
+        }
+
+        .cell-symbol {
+            color: #ff8800;
+            font-weight: 700;
+        }
+
+        .cell-price {
+            color: #fff;
+            font-weight: 700;
+        }
+
+        .cell-change {
+            display: flex;
+            align-items: center;
+        }
+
+        .cell-change.positive {
+            color: #00ff00;
+        }
+
+        .cell-change.negative {
+            color: #ff0000;
+        }
+
+        .mini-chart {
+            height: 20px;
+            opacity: 0.8;
+        }
+
+        /* Side Panel */
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .panel-section {
+            background: #0a0a0a;
+            border: 1px solid #333;
+            padding: 15px;
+        }
+
+        .section-title {
+            color: #ff8800;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #333;
+        }
+
+        .trending-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .trending-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            background: #111;
+            border: 1px solid #222;
+            transition: all 0.2s;
+        }
+
+        .trending-item:hover {
+            border-color: #ff8800;
+            background: #1a1a1a;
+        }
+
+        .trending-rank {
+            color: #ff8800;
+            font-weight: 700;
+            margin-right: 10px;
+        }
+
+        .trending-symbol {
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .trending-score {
+            color: #00ff00;
+            font-size: 12px;
+        }
+
+        /* Persona Status */
+        .persona-status {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .persona-badge {
+            background: #222;
+            border: 1px solid #444;
+            padding: 4px 12px;
+            font-size: 11px;
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+
+        .persona-badge.active {
+            background: #ff8800;
+            color: #000;
+            border-color: #ff8800;
+            animation: pulse 1s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            border: 2px solid #333;
+            border-top-color: #ff8800;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Flash Effect */
+        .flash {
+            animation: flash-effect 0.5s ease-out;
+        }
+
+        @keyframes flash-effect {
+            0% { background-color: rgba(255, 136, 0, 0.3); }
+            100% { background-color: transparent; }
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #111;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body>
+    <!-- Ticker Tape -->
+    <div class="ticker-tape">
+        <div class="ticker-content" id="tickerContent"></div>
+    </div>
+
+    <!-- Terminal Header -->
+    <div class="terminal-header">
+        <div class="terminal-title">ALPHATERMINAL // BLOOMBERG MODE</div>
+        <div class="terminal-info">
+            <div class="info-item">
+                <span class="info-label">TIME:</span>
+                <span id="currentTime">00:00:00</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">MARKETS:</span>
+                <span id="marketCount">0</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">STATUS:</span>
+                <span id="connectionStatus">CONNECTING...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div class="dashboard-container">
+        <!-- Market Stats -->
+        <div class="market-stats" id="marketStats">
+            <div class="stat-card">
+                <div class="stat-label">Total Market Cap</div>
+                <div class="stat-value" id="totalMarketCap">$0.00T</div>
+                <div class="stat-change" id="marketCapChange">0.00%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">24h Volume</div>
+                <div class="stat-value" id="totalVolume">$0.00B</div>
+                <div class="stat-change" id="volumeChange">0.00%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">BTC Dominance</div>
+                <div class="stat-value" id="btcDominance">0.00%</div>
+                <div class="stat-change" id="btcDomChange">0.00%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Active Coins</div>
+                <div class="stat-value" id="activeCoins">0</div>
+                <div class="stat-change positive">LIVE</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Fear & Greed</div>
+                <div class="stat-value" id="fearGreed">50</div>
+                <div class="stat-change" id="fearGreedLabel">NEUTRAL</div>
+            </div>
+        </div>
+
+        <!-- Content Grid -->
+        <div class="content-grid">
+            <!-- Market Table -->
+            <div class="market-table-container">
+                <div class="table-header">
+                    <div class="table-title">Live Market Data // CoinGecko MCP</div>
+                    <div class="table-controls">
+                        <button class="control-btn" onclick="sortTable('rank')">RANK</button>
+                        <button class="control-btn" onclick="sortTable('price')">PRICE</button>
+                        <button class="control-btn" onclick="sortTable('change')">24H</button>
+                        <button class="control-btn" onclick="refreshData()">REFRESH</button>
+                    </div>
+                </div>
+                <div class="market-table">
+                    <div class="table-row header">
+                        <div class="cell">#</div>
+                        <div class="cell">Symbol</div>
+                        <div class="cell">Price</div>
+                        <div class="cell">24h %</div>
+                        <div class="cell">Volume</div>
+                        <div class="cell">Market Cap</div>
+                        <div class="cell">7d Chart</div>
+                    </div>
+                    <div id="marketTableBody"></div>
+                </div>
+            </div>
+
+            <!-- Side Panel -->
+            <div class="side-panel">
+                <!-- Trending Coins -->
+                <div class="panel-section">
+                    <div class="section-title">Trending Now</div>
+                    <div class="trending-list" id="trendingList"></div>
+                </div>
+
+                <!-- Active Personas -->
+                <div class="panel-section">
+                    <div class="section-title">AI Personas Active</div>
+                    <div class="persona-status" id="personaStatus">
+                        <div class="persona-badge">Architect</div>
+                        <div class="persona-badge">Frontend</div>
+                        <div class="persona-badge">Backend</div>
+                        <div class="persona-badge">Analyzer</div>
+                        <div class="persona-badge">Security</div>
+                        <div class="persona-badge">Performance</div>
+                    </div>
+                </div>
+
+                <!-- System Log -->
+                <div class="panel-section">
+                    <div class="section-title">System Log</div>
+                    <div id="systemLog" style="height: 150px; overflow-y: auto; font-size: 11px; color: #666;">
+                        <div>[00:00:00] System initializing...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Bloomberg Terminal Dashboard
+        class BloombergDashboard {
+            constructor() {
+                this.socket = io();
+                this.marketData = [];
+                this.tickerData = [];
+                this.trendingData = [];
+                this.sortBy = 'rank';
+                this.sortOrder = 'asc';
+                this.activePersonas = new Set();
+                
+                this.initialize();
+            }
+
+            initialize() {
+                this.setupSocketHandlers();
+                this.startClock();
+                this.initializeDashboard();
+                this.addLog('System initialized successfully');
+            }
+
+            setupSocketHandlers() {
+                this.socket.on('connect', () => {
+                    document.getElementById('connectionStatus').textContent = 'CONNECTED';
+                    document.getElementById('connectionStatus').style.color = '#00ff00';
+                    this.addLog('Connected to AlphaTerminal server');
+                });
+
+                this.socket.on('disconnect', () => {
+                    document.getElementById('connectionStatus').textContent = 'DISCONNECTED';
+                    document.getElementById('connectionStatus').style.color = '#ff0000';
+                    this.addLog('Disconnected from server');
+                });
+
+                this.socket.on('market:initial', (data) => {
+                    this.addLog('Received initial market data');
+                    this.updateDashboard(data);
+                });
+
+                this.socket.on('market:update', (data) => {
+                    this.updateMarketData(data);
+                });
+
+                this.socket.on('dashboard:initialized', (data) => {
+                    this.addLog('Dashboard initialized with Bloomberg layout');
+                    this.updateDashboard(data);
+                });
+
+                this.socket.on('persona:update', (data) => {
+                    this.updatePersonaStatus(data.persona, data.task);
+                });
+
+                this.socket.on('coingecko:response', (data) => {
+                    this.handleCoinGeckoResponse(data);
+                });
+
+                this.socket.on('coingecko:price_update', (data) => {
+                    this.updatePrices(data);
+                });
+            }
+
+            async initializeDashboard() {
+                try {
+                    const response = await fetch('/api/dashboard/initialize', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    
+                    const data = await response.json();
+                    if (data.success) {
+                        this.addLog('Dashboard initialization complete');
+                    }
+                } catch (error) {
+                    this.addLog(`Error: ${error.message}`);
+                }
+
+                // Subscribe to live updates
+                this.socket.emit('dashboard:subscribe', { 
+                    assets: ['BTC', 'ETH', 'BNB', 'SOL', 'XRP']
+                });
+
+                // Request CoinGecko data
+                this.socket.emit('coingecko:request', {
+                    action: 'get_market',
+                    params: { limit: 20 }
+                });
+
+                // Get trending coins
+                this.socket.emit('coingecko:request', {
+                    action: 'get_trending',
+                    params: {}
+                });
+            }
+
+            updateDashboard(data) {
+                if (data.tickers) {
+                    this.updateTicker(data.tickers);
+                }
+                if (data.assets) {
+                    this.marketData = data.assets;
+                    this.updateMarketTable();
+                }
+                if (data.stats) {
+                    this.updateStats(data.stats);
+                }
+            }
+
+            updateTicker(tickers) {
+                const tickerContent = document.getElementById('tickerContent');
+                const tickerHTML = tickers.map(ticker => `
+                    <div class="ticker-item">
+                        <span class="ticker-symbol">${ticker.symbol}</span>
+                        <span class="ticker-price">$${this.formatPrice(ticker.price)}</span>
+                        <span class="ticker-change ${ticker.change24h >= 0 ? 'up' : 'down'}">
+                            <span class="ticker-arrow">${ticker.change24h >= 0 ? '▲' : '▼'}</span>
+                            ${Math.abs(ticker.change24h).toFixed(2)}%
+                        </span>
+                    </div>
+                `).join('');
+                
+                tickerContent.innerHTML = tickerHTML + tickerHTML; // Duplicate for seamless scroll
+            }
+
+            updateMarketTable() {
+                const tableBody = document.getElementById('marketTableBody');
+                
+                // Sort data
+                const sortedData = [...this.marketData].sort((a, b) => {
+                    let aVal, bVal;
+                    switch (this.sortBy) {
+                        case 'rank':
+                            aVal = a.market_cap_rank;
+                            bVal = b.market_cap_rank;
+                            break;
+                        case 'price':
+                            aVal = a.current_price;
+                            bVal = b.current_price;
+                            break;
+                        case 'change':
+                            aVal = a.price_change_percentage_24h;
+                            bVal = b.price_change_percentage_24h;
+                            break;
+                    }
+                    return this.sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+                });
+
+                tableBody.innerHTML = sortedData.map(coin => `
+                    <div class="table-row" data-symbol="${coin.symbol}">
+                        <div class="cell cell-rank">${coin.market_cap_rank}</div>
+                        <div class="cell cell-symbol">${coin.symbol.toUpperCase()}</div>
+                        <div class="cell cell-price">$${this.formatPrice(coin.current_price)}</div>
+                        <div class="cell cell-change ${coin.price_change_percentage_24h >= 0 ? 'positive' : 'negative'}">
+                            ${coin.price_change_percentage_24h >= 0 ? '▲' : '▼'} 
+                            ${Math.abs(coin.price_change_percentage_24h).toFixed(2)}%
+                        </div>
+                        <div class="cell">$${this.formatVolume(coin.total_volume)}</div>
+                        <div class="cell">$${this.formatMarketCap(coin.market_cap)}</div>
+                        <div class="cell">
+                            <canvas class="mini-chart" id="chart-${coin.id}" width="150" height="20"></canvas>
+                        </div>
+                    </div>
+                `).join('');
+
+                // Draw mini charts
+                setTimeout(() => {
+                    sortedData.forEach(coin => {
+                        if (coin.sparkline_in_7d) {
+                            this.drawMiniChart(`chart-${coin.id}`, coin.sparkline_in_7d.price);
+                        }
+                    });
+                }, 100);
+
+                document.getElementById('marketCount').textContent = this.marketData.length;
+            }
+
+            updateStats(stats) {
+                document.getElementById('totalMarketCap').textContent = '$' + this.formatMarketCap(stats.totalMarketCap);
+                document.getElementById('totalVolume').textContent = '$' + this.formatVolume(stats.totalVolume);
+                document.getElementById('btcDominance').textContent = stats.btcDominance.toFixed(2) + '%';
+                document.getElementById('activeCoins').textContent = stats.activeMarkets || '0';
+                
+                const mcChange = stats.marketCapChange24h || 0;
+                const mcChangeEl = document.getElementById('marketCapChange');
+                mcChangeEl.textContent = (mcChange >= 0 ? '▲ ' : '▼ ') + Math.abs(mcChange).toFixed(2) + '%';
+                mcChangeEl.className = 'stat-change ' + (mcChange >= 0 ? 'positive' : 'negative');
+            }
+
+            updateMarketData(data) {
+                if (data.assets) {
+                    // Flash updated rows
+                    data.assets.forEach(newCoin => {
+                        const existingCoin = this.marketData.find(c => c.id === newCoin.id);
+                        if (existingCoin) {
+                            const row = document.querySelector(`[data-symbol="${newCoin.symbol}"]`);
+                            if (row && existingCoin.current_price !== newCoin.current_price) {
+                                row.classList.add('flash');
+                                setTimeout(() => row.classList.remove('flash'), 500);
+                            }
+                        }
+                    });
+                    
+                    this.marketData = data.assets;
+                    this.updateMarketTable();
+                }
+                
+                if (data.tickers) {
+                    this.updateTicker(data.tickers);
+                }
+            }
+
+            handleCoinGeckoResponse(data) {
+                if (data.action === 'get_trending' && data.data) {
+                    this.updateTrendingCoins(data.data);
+                }
+            }
+
+            updateTrendingCoins(trending) {
+                const trendingList = document.getElementById('trendingList');
+                trendingList.innerHTML = trending.slice(0, 5).map((coin, index) => `
+                    <div class="trending-item">
+                        <div style="display: flex; align-items: center;">
+                            <span class="trending-rank">#${index + 1}</span>
+                            <span class="trending-symbol">${coin.item.symbol}</span>
+                        </div>
+                        <span class="trending-score">Score: ${coin.item.score}</span>
+                    </div>
+                `).join('');
+            }
+
+            updatePersonaStatus(persona, task) {
+                const badges = document.querySelectorAll('.persona-badge');
+                badges.forEach(badge => {
+                    if (badge.textContent.toLowerCase() === persona.toLowerCase()) {
+                        badge.classList.add('active');
+                        setTimeout(() => badge.classList.remove('active'), 3000);
+                    }
+                });
+                
+                this.addLog(`${persona} persona: ${task}`);
+            }
+
+            drawMiniChart(canvasId, data) {
+                const canvas = document.getElementById(canvasId);
+                if (!canvas || !data) return;
+                
+                const ctx = canvas.getContext('2d');
+                const width = canvas.width;
+                const height = canvas.height;
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, width, height);
+                
+                // Get min and max values
+                const min = Math.min(...data);
+                const max = Math.max(...data);
+                const range = max - min;
+                
+                // Draw sparkline
+                ctx.strokeStyle = data[data.length - 1] > data[0] ? '#00ff00' : '#ff0000';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                
+                data.forEach((value, index) => {
+                    const x = (index / (data.length - 1)) * width;
+                    const y = height - ((value - min) / range) * height;
+                    
+                    if (index === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                });
+                
+                ctx.stroke();
+            }
+
+            startClock() {
+                const updateTime = () => {
+                    const now = new Date();
+                    document.getElementById('currentTime').textContent = 
+                        now.toTimeString().split(' ')[0];
+                };
+                
+                updateTime();
+                setInterval(updateTime, 1000);
+            }
+
+            formatPrice(price) {
+                if (price >= 1000) {
+                    return price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                } else if (price >= 1) {
+                    return price.toFixed(2);
+                } else {
+                    return price.toFixed(6);
+                }
+            }
+
+            formatVolume(volume) {
+                if (volume >= 1e9) {
+                    return (volume / 1e9).toFixed(2) + 'B';
+                } else if (volume >= 1e6) {
+                    return (volume / 1e6).toFixed(2) + 'M';
+                } else {
+                    return (volume / 1e3).toFixed(2) + 'K';
+                }
+            }
+
+            formatMarketCap(marketCap) {
+                if (marketCap >= 1e12) {
+                    return (marketCap / 1e12).toFixed(2) + 'T';
+                } else if (marketCap >= 1e9) {
+                    return (marketCap / 1e9).toFixed(2) + 'B';
+                } else {
+                    return (marketCap / 1e6).toFixed(2) + 'M';
+                }
+            }
+
+            addLog(message) {
+                const log = document.getElementById('systemLog');
+                const time = new Date().toTimeString().split(' ')[0];
+                const entry = document.createElement('div');
+                entry.textContent = `[${time}] ${message}`;
+                log.appendChild(entry);
+                log.scrollTop = log.scrollHeight;
+                
+                // Keep only last 50 entries
+                while (log.children.length > 50) {
+                    log.removeChild(log.firstChild);
+                }
+            }
+        }
+
+        // Global functions
+        function sortTable(column) {
+            dashboard.sortBy = column;
+            dashboard.sortOrder = dashboard.sortOrder === 'asc' ? 'desc' : 'asc';
+            dashboard.updateMarketTable();
+        }
+
+        function refreshData() {
+            dashboard.socket.emit('coingecko:request', {
+                action: 'get_market',
+                params: { limit: 20 }
+            });
+        }
+
+        // Initialize dashboard
+        const dashboard = new BloombergDashboard();
+    </script>
+</body>
+</html>

@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlphaTerminal - Bloomberg Terminal [VELO + COINGECKO]</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000000;
+            color: #00ff00;
+            font-family: 'IBM Plex Mono', 'Courier New', monospace;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Bloomberg-style Ticker Tape */
+        .ticker-tape {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 32px;
+            background: #1a1a1a;
+            border-bottom: 2px solid #ff8800;
+            overflow: hidden;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+        }
+
+        .ticker-content {
+            display: flex;
+            animation: scroll-ticker 40s linear infinite;
+            white-space: nowrap;
+            padding-left: 100%;
+        }
+
+        @keyframes scroll-ticker {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100%); }
+        }
+
+        .ticker-item {
+            display: inline-flex;
+            align-items: center;
+            margin: 0 30px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .ticker-symbol {
+            color: #ff8800;
+            margin-right: 10px;
+            font-weight: 700;
+        }
+
+        .ticker-price {
+            color: #ffffff;
+            margin-right: 8px;
+        }
+
+        .ticker-change {
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+        }
+
+        .ticker-change.up { color: #00ff00; }
+        .ticker-change.down { color: #ff0000; }
+
+        .ticker-arrow {
+            margin-right: 3px;
+            font-size: 10px;
+        }
+
+        /* Terminal Header */
+        .terminal-header {
+            background: #0a0a0a;
+            border-bottom: 1px solid #333;
+            padding: 8px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 32px;
+        }
+
+        .terminal-title {
+            font-size: 16px;
+            color: #ff8800;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .terminal-info {
+            display: flex;
+            gap: 30px;
+            font-size: 13px;
+        }
+
+        .info-item {
+            color: #00ff00;
+        }
+
+        .info-label {
+            color: #888;
+            margin-right: 5px;
+        }
+
+        /* Main Dashboard Container */
+        .dashboard-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            overflow: hidden;
+        }
+
+        /* Tab Navigation */
+        .tab-nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .tab-btn {
+            background: #111;
+            border: 1px solid #333;
+            color: #888;
+            padding: 8px 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        .tab-btn.active {
+            background: #1a1a1a;
+            color: #ff8800;
+            border-color: #ff8800;
+            border-bottom: 2px solid #ff8800;
+        }
+
+        .tab-btn:hover {
+            color: #ff8800;
+            border-color: #ff8800;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .tab-content.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Market Stats */
+        .market-stats {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .stat-card {
+            background: #0a0a0a;
+            border: 1px solid #333;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #ff8800;
+        }
+
+        .stat-label {
+            color: #888;
+            font-size: 10px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            color: #ff8800;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .stat-change {
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+        }
+
+        .stat-change.positive { color: #00ff00; }
+        .stat-change.negative { color: #ff0000; }
+
+        /* Data Tables */
+        .data-table-container {
+            background: #0a0a0a;
+            border: 1px solid #333;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .table-header {
+            background: #1a1a1a;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #ff8800;
+        }
+
+        .table-title {
+            color: #ff8800;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .data-source {
+            color: #00ff00;
+            font-size: 11px;
+            font-weight: normal;
+            margin-left: 10px;
+        }
+
+        .table-wrapper {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .table-row {
+            display: grid;
+            padding: 8px 15px;
+            border-bottom: 1px solid #222;
+            align-items: center;
+            transition: background 0.1s;
+            font-size: 12px;
+        }
+
+        .table-row:hover {
+            background: #1a1a1a;
+        }
+
+        .table-row.header {
+            background: #111;
+            border-bottom: 1px solid #444;
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        /* Spot Market Table */
+        .spot-table .table-row {
+            grid-template-columns: 40px 80px 100px 80px 120px 120px 150px;
+        }
+
+        /* Futures Table */
+        .futures-table .table-row {
+            grid-template-columns: 80px 100px 100px 80px 100px 120px 80px 100px;
+        }
+
+        /* Options Table */
+        .options-table .table-row {
+            grid-template-columns: 60px 150px 80px 80px 80px 60px 60px 80px;
+        }
+
+        /* Funding Rates Table */
+        .funding-table .table-row {
+            grid-template-columns: 80px 100px 100px 100px 100px 120px 120px;
+        }
+
+        /* Cell Styles */
+        .cell {
+            font-weight: 600;
+        }
+
+        .cell-rank { color: #666; }
+        .cell-symbol { color: #ff8800; font-weight: 700; }
+        .cell-price { color: #fff; font-weight: 700; }
+        .cell-exchange { color: #00aaff; }
+        .cell-positive { color: #00ff00; }
+        .cell-negative { color: #ff0000; }
+        .cell-neutral { color: #ffaa00; }
+
+        /* Mini Charts */
+        .mini-chart {
+            height: 20px;
+            opacity: 0.8;
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            border: 2px solid #333;
+            border-top-color: #ff8800;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Flash Effect */
+        .flash {
+            animation: flash-effect 0.5s ease-out;
+        }
+
+        @keyframes flash-effect {
+            0% { background-color: rgba(255, 136, 0, 0.3); }
+            100% { background-color: transparent; }
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #111;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* Side Panel */
+        .side-panel {
+            position: fixed;
+            right: 0;
+            top: 32px;
+            bottom: 0;
+            width: 300px;
+            background: #0a0a0a;
+            border-left: 1px solid #333;
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .panel-section {
+            background: #111;
+            border: 1px solid #222;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+
+        .section-title {
+            color: #ff8800;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #333;
+        }
+
+        /* Persona Status */
+        .persona-status {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .persona-badge {
+            background: #222;
+            border: 1px solid #444;
+            padding: 3px 10px;
+            font-size: 10px;
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+
+        .persona-badge.active {
+            background: #ff8800;
+            color: #000;
+            border-color: #ff8800;
+            animation: pulse 1s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* Adjust main container for side panel */
+        .dashboard-container {
+            margin-right: 300px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Ticker Tape -->
+    <div class="ticker-tape">
+        <div class="ticker-content" id="tickerContent"></div>
+    </div>
+
+    <!-- Terminal Header -->
+    <div class="terminal-header">
+        <div class="terminal-title">ALPHATERMINAL // VELO + COINGECKO MCP INTEGRATION</div>
+        <div class="terminal-info">
+            <div class="info-item">
+                <span class="info-label">TIME:</span>
+                <span id="currentTime">00:00:00</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">SPOT:</span>
+                <span id="spotCount">0</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">FUTURES:</span>
+                <span id="futuresCount">0</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">OPTIONS:</span>
+                <span id="optionsCount">0</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">STATUS:</span>
+                <span id="connectionStatus">CONNECTING...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div class="dashboard-container">
+        <!-- Tab Navigation -->
+        <div class="tab-nav">
+            <button class="tab-btn active" onclick="switchTab('spot')">SPOT MARKETS</button>
+            <button class="tab-btn" onclick="switchTab('futures')">FUTURES</button>
+            <button class="tab-btn" onclick="switchTab('options')">OPTIONS</button>
+            <button class="tab-btn" onclick="switchTab('funding')">FUNDING RATES</button>
+        </div>
+
+        <!-- SPOT Markets Tab (CoinGecko) -->
+        <div class="tab-content active" id="spot-tab">
+            <div class="market-stats" id="spotStats">
+                <div class="stat-card">
+                    <div class="stat-label">Total Market Cap</div>
+                    <div class="stat-value" id="totalMarketCap">$0.00T</div>
+                    <div class="stat-change" id="marketCapChange">0.00%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">24h Volume</div>
+                    <div class="stat-value" id="totalVolume">$0.00B</div>
+                    <div class="stat-change" id="volumeChange">0.00%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">BTC Dominance</div>
+                    <div class="stat-value" id="btcDominance">0.00%</div>
+                    <div class="stat-change" id="btcDomChange">0.00%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Active Coins</div>
+                    <div class="stat-value" id="activeCoins">0</div>
+                    <div class="stat-change positive">LIVE</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">ETH/BTC</div>
+                    <div class="stat-value" id="ethBtcRatio">0.0000</div>
+                    <div class="stat-change" id="ethBtcChange">0.00%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Fear & Greed</div>
+                    <div class="stat-value" id="fearGreed">50</div>
+                    <div class="stat-change" id="fearGreedLabel">NEUTRAL</div>
+                </div>
+            </div>
+
+            <div class="data-table-container spot-table">
+                <div class="table-header">
+                    <div class="table-title">Live Spot Market Data <span class="data-source">[COINGECKO MCP]</span></div>
+                </div>
+                <div class="table-wrapper">
+                    <div class="table-row header">
+                        <div class="cell">#</div>
+                        <div class="cell">Symbol</div>
+                        <div class="cell">Price</div>
+                        <div class="cell">24h %</div>
+                        <div class="cell">Volume</div>
+                        <div class="cell">Market Cap</div>
+                        <div class="cell">7d Chart</div>
+                    </div>
+                    <div id="spotTableBody"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FUTURES Tab (Velo) -->
+        <div class="tab-content" id="futures-tab">
+            <div class="market-stats" id="futuresStats">
+                <div class="stat-card">
+                    <div class="stat-label">Total OI</div>
+                    <div class="stat-value" id="totalOI">$0.00B</div>
+                    <div class="stat-change" id="oiChange">0.00%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">24h Volume</div>
+                    <div class="stat-value" id="futuresVolume">$0.00B</div>
+                    <div class="stat-change" id="futuresVolChange">0.00%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Avg Funding</div>
+                    <div class="stat-value" id="avgFunding">0.0000%</div>
+                    <div class="stat-change" id="fundingTrend">NEUTRAL</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Basis Spread</div>
+                    <div class="stat-value" id="basisSpread">0.00%</div>
+                    <div class="stat-change" id="basisTrend">0.00%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Long/Short</div>
+                    <div class="stat-value" id="longShortRatio">50/50</div>
+                    <div class="stat-change" id="lsChange">BALANCED</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Active Markets</div>
+                    <div class="stat-value" id="activeFutures">0</div>
+                    <div class="stat-change positive">LIVE</div>
+                </div>
+            </div>
+
+            <div class="data-table-container futures-table">
+                <div class="table-header">
+                    <div class="table-title">Live Futures Data <span class="data-source">[VELO API]</span></div>
+                </div>
+                <div class="table-wrapper">
+                    <div class="table-row header">
+                        <div class="cell">Exchange</div>
+                        <div class="cell">Product</div>
+                        <div class="cell">Mark Price</div>
+                        <div class="cell">Basis</div>
+                        <div class="cell">Funding Rate</div>
+                        <div class="cell">Open Interest</div>
+                        <div class="cell">24h Vol</div>
+                        <div class="cell">Next Funding</div>
+                    </div>
+                    <div id="futuresTableBody"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- OPTIONS Tab (Velo) -->
+        <div class="tab-content" id="options-tab">
+            <div class="market-stats" id="optionsStats">
+                <div class="stat-card">
+                    <div class="stat-label">Total OI</div>
+                    <div class="stat-value" id="optionsOI">$0.00B</div>
+                    <div class="stat-change" id="optionsOIChange">0.00%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Put/Call Ratio</div>
+                    <div class="stat-value" id="putCallRatio">0.00</div>
+                    <div class="stat-change" id="pcChange">NEUTRAL</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Avg IV</div>
+                    <div class="stat-value" id="avgIV">0.00%</div>
+                    <div class="stat-change" id="ivChange">0.00%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Max Pain</div>
+                    <div class="stat-value" id="maxPain">$0</div>
+                    <div class="stat-change" id="maxPainDiff">0.00%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">GEX</div>
+                    <div class="stat-value" id="gex">$0.00M</div>
+                    <div class="stat-change" id="gexLevel">LOW</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Active Options</div>
+                    <div class="stat-value" id="activeOptions">0</div>
+                    <div class="stat-change positive">LIVE</div>
+                </div>
+            </div>
+
+            <div class="data-table-container options-table">
+                <div class="table-header">
+                    <div class="table-title">Live Options Data <span class="data-source">[VELO API]</span></div>
+                </div>
+                <div class="table-wrapper">
+                    <div class="table-row header">
+                        <div class="cell">Type</div>
+                        <div class="cell">Contract</div>
+                        <div class="cell">Strike</div>
+                        <div class="cell">Mark</div>
+                        <div class="cell">IV</div>
+                        <div class="cell">Delta</div>
+                        <div class="cell">Theta</div>
+                        <div class="cell">Volume</div>
+                    </div>
+                    <div id="optionsTableBody"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FUNDING RATES Tab (Velo) -->
+        <div class="tab-content" id="funding-tab">
+            <div class="market-stats" id="fundingStats">
+                <div class="stat-card">
+                    <div class="stat-label">Avg Rate</div>
+                    <div class="stat-value" id="avgFundingRate">0.0000%</div>
+                    <div class="stat-change" id="fundingDirection">NEUTRAL</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Max Rate</div>
+                    <div class="stat-value" id="maxFundingRate">0.0000%</div>
+                    <div class="stat-change" id="maxExchange">EXCHANGE</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Min Rate</div>
+                    <div class="stat-value" id="minFundingRate">0.0000%</div>
+                    <div class="stat-change" id="minExchange">EXCHANGE</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Spread</div>
+                    <div class="stat-value" id="fundingSpread">0.0000%</div>
+                    <div class="stat-change" id="spreadChange">0.00%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Next Update</div>
+                    <div class="stat-value" id="nextFundingTime">00:00:00</div>
+                    <div class="stat-change positive">COUNTDOWN</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Arb Opps</div>
+                    <div class="stat-value" id="arbCount">0</div>
+                    <div class="stat-change" id="arbStatus">SCANNING</div>
+                </div>
+            </div>
+
+            <div class="data-table-container funding-table">
+                <div class="table-header">
+                    <div class="table-title">Live Funding Rates <span class="data-source">[VELO API]</span></div>
+                </div>
+                <div class="table-wrapper">
+                    <div class="table-row header">
+                        <div class="cell">Exchange</div>
+                        <div class="cell">Product</div>
+                        <div class="cell">Current Rate</div>
+                        <div class="cell">Predicted</div>
+                        <div class="cell">7d Average</div>
+                        <div class="cell">Open Interest</div>
+                        <div class="cell">Next Funding</div>
+                    </div>
+                    <div id="fundingTableBody"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Side Panel -->
+    <div class="side-panel">
+        <!-- Trending Coins -->
+        <div class="panel-section">
+            <div class="section-title">Trending Now [COINGECKO]</div>
+            <div id="trendingList"></div>
+        </div>
+
+        <!-- Active Personas -->
+        <div class="panel-section">
+            <div class="section-title">AI Personas Active</div>
+            <div class="persona-status" id="personaStatus">
+                <div class="persona-badge">Architect</div>
+                <div class="persona-badge">Frontend</div>
+                <div class="persona-badge">Backend</div>
+                <div class="persona-badge">Analyzer</div>
+                <div class="persona-badge">Security</div>
+                <div class="persona-badge">Performance</div>
+            </div>
+        </div>
+
+        <!-- Data Sources -->
+        <div class="panel-section">
+            <div class="section-title">Data Sources</div>
+            <div style="font-size: 11px; color: #666;">
+                <div style="margin-bottom: 8px;">
+                    <span style="color: #00ff00;">● COINGECKO MCP</span><br>
+                    <span style="margin-left: 10px;">Spot markets, trending, global stats</span>
+                </div>
+                <div>
+                    <span style="color: #00aaff;">● VELO API</span><br>
+                    <span style="margin-left: 10px;">Futures, options, funding rates</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Log -->
+        <div class="panel-section">
+            <div class="section-title">System Log</div>
+            <div id="systemLog" style="height: 200px; overflow-y: auto; font-size: 10px; color: #666;">
+                <div>[00:00:00] System initializing...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Enhanced Bloomberg Terminal Dashboard with Velo + CoinGecko
+        class EnhancedBloombergDashboard {
+            constructor() {
+                this.socket = io();
+                this.currentTab = 'spot';
+                this.spotData = [];
+                this.futuresData = [];
+                this.optionsData = [];
+                this.fundingData = [];
+                this.trendingData = [];
+                this.updateIntervals = {};
+                
+                this.initialize();
+            }
+
+            initialize() {
+                this.setupSocketHandlers();
+                this.startClock();
+                this.initializeDataFeeds();
+                this.addLog('System initialized with VELO + COINGECKO integration');
+                
+                // Start update cycles
+                this.startDataUpdates();
+            }
+
+            setupSocketHandlers() {
+                this.socket.on('connect', () => {
+                    document.getElementById('connectionStatus').textContent = 'CONNECTED';
+                    document.getElementById('connectionStatus').style.color = '#00ff00';
+                    this.addLog('Connected to AlphaTerminal server');
+                });
+
+                this.socket.on('disconnect', () => {
+                    document.getElementById('connectionStatus').textContent = 'DISCONNECTED';
+                    document.getElementById('connectionStatus').style.color = '#ff0000';
+                    this.addLog('Disconnected from server');
+                });
+
+                this.socket.on('market:update', (data) => {
+                    this.updateSpotMarketData(data);
+                });
+
+                this.socket.on('persona:update', (data) => {
+                    this.updatePersonaStatus(data.persona, data.task);
+                });
+
+                this.socket.on('coingecko:response', (data) => {
+                    this.handleCoinGeckoResponse(data);
+                });
+
+                this.socket.on('velo:futures', (data) => {
+                    this.updateFuturesData(data);
+                });
+
+                this.socket.on('velo:options', (data) => {
+                    this.updateOptionsData(data);
+                });
+
+                this.socket.on('velo:funding', (data) => {
+                    this.updateFundingData(data);
+                });
+            }
+
+            async initializeDataFeeds() {
+                // Initialize CoinGecko data
+                await this.fetchCoinGeckoData();
+                
+                // Initialize Velo data
+                await this.fetchVeloData();
+                
+                // Subscribe to live updates
+                this.socket.emit('dashboard:subscribe', { 
+                    assets: ['BTC', 'ETH', 'BNB', 'SOL', 'XRP'],
+                    veloProducts: ['BTC-PERP', 'ETH-PERP', 'SOL-PERP']
+                });
+            }
+
+            async startDataUpdates() {
+                // CoinGecko updates (every 10 seconds)
+                this.updateIntervals.coingecko = setInterval(() => {
+                    this.fetchCoinGeckoData();
+                }, 10000);
+
+                // Velo updates (every 5 seconds)
+                this.updateIntervals.velo = setInterval(() => {
+                    this.fetchVeloData();
+                }, 5000);
+
+                // Ticker updates (every 3 seconds)
+                this.updateIntervals.ticker = setInterval(() => {
+                    this.updateTicker();
+                }, 3000);
+            }
+
+            async fetchCoinGeckoData() {
+                try {
+                    // Fetch spot market data
+                    const marketResponse = await fetch('/api/coingecko/market', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ per_page: 50, sparkline: true })
+                    });
+                    const marketData = await marketResponse.json();
+                    if (marketData.success) {
+                        this.spotData = marketData.data;
+                        this.updateSpotTable();
+                        this.addLog('CoinGecko market data updated');
+                    }
+
+                    // Fetch trending coins
+                    const trendingResponse = await fetch('/api/coingecko/trending');
+                    const trendingData = await trendingResponse.json();
+                    if (trendingData.success) {
+                        this.trendingData = trendingData.coins;
+                        this.updateTrendingCoins();
+                    }
+
+                    // Fetch global stats
+                    const globalResponse = await fetch('/api/coingecko/global');
+                    const globalData = await globalResponse.json();
+                    if (globalData.success) {
+                        this.updateGlobalStats(globalData.data);
+                    }
+                } catch (error) {
+                    this.addLog(`CoinGecko error: ${error.message}`);
+                }
+            }
+
+            async fetchVeloData() {
+                try {
+                    // Fetch futures data
+                    const futuresResponse = await fetch('/api/velo/futures');
+                    const futuresData = await futuresResponse.json();
+                    if (futuresData.success) {
+                        this.futuresData = futuresData.data;
+                        if (this.currentTab === 'futures') {
+                            this.updateFuturesTable();
+                        }
+                        this.addLog('Velo futures data updated');
+                    }
+
+                    // Fetch options data
+                    const optionsResponse = await fetch('/api/velo/options');
+                    const optionsData = await optionsResponse.json();
+                    if (optionsData.success) {
+                        this.optionsData = optionsData.data;
+                        if (this.currentTab === 'options') {
+                            this.updateOptionsTable();
+                        }
+                    }
+
+                    // Fetch funding rates
+                    const fundingResponse = await fetch('/api/velo/funding-rates');
+                    const fundingData = await fundingResponse.json();
+                    if (fundingData.success) {
+                        this.fundingData = fundingData.data;
+                        if (this.currentTab === 'funding') {
+                            this.updateFundingTable();
+                        }
+                    }
+                } catch (error) {
+                    this.addLog(`Velo error: ${error.message}`);
+                }
+            }
+
+            updateTicker() {
+                const tickerContent = document.getElementById('tickerContent');
+                
+                // Combine spot and futures data for ticker
+                const tickerItems = [];
+                
+                // Add top spot markets
+                this.spotData.slice(0, 10).forEach(coin => {
+                    tickerItems.push({
+                        symbol: coin.symbol.toUpperCase(),
+                        price: coin.current_price,
+                        change: coin.price_change_percentage_24h,
+                        type: 'SPOT'
+                    });
+                });
+
+                // Add futures data
+                this.futuresData.filter(f => f.type === 'perpetual').slice(0, 5).forEach(future => {
+                    tickerItems.push({
+                        symbol: future.product,
+                        price: future.mark_price,
+                        change: ((future.mark_price - future.index_price) / future.index_price) * 100,
+                        type: 'PERP'
+                    });
+                });
+
+                const tickerHTML = tickerItems.map(item => `
+                    <div class="ticker-item">
+                        <span class="ticker-symbol">${item.symbol}</span>
+                        <span class="ticker-price">$${this.formatPrice(item.price)}</span>
+                        <span class="ticker-change ${item.change >= 0 ? 'up' : 'down'}">
+                            <span class="ticker-arrow">${item.change >= 0 ? '▲' : '▼'}</span>
+                            ${Math.abs(item.change).toFixed(2)}%
+                        </span>
+                    </div>
+                `).join('');
+                
+                tickerContent.innerHTML = tickerHTML + tickerHTML; // Duplicate for seamless scroll
+            }
+
+            updateSpotTable() {
+                const tableBody = document.getElementById('spotTableBody');
+                
+                tableBody.innerHTML = this.spotData.map(coin => `
+                    <div class="table-row" data-symbol="${coin.symbol}">
+                        <div class="cell cell-rank">${coin.market_cap_rank}</div>
+                        <div class="cell cell-symbol">${coin.symbol.toUpperCase()}</div>
+                        <div class="cell cell-price">$${this.formatPrice(coin.current_price)}</div>
+                        <div class="cell ${coin.price_change_percentage_24h >= 0 ? 'cell-positive' : 'cell-negative'}">
+                            ${coin.price_change_percentage_24h >= 0 ? '▲' : '▼'} 
+                            ${Math.abs(coin.price_change_percentage_24h).toFixed(2)}%
+                        </div>
+                        <div class="cell">$${this.formatVolume(coin.total_volume)}</div>
+                        <div class="cell">$${this.formatMarketCap(coin.market_cap)}</div>
+                        <div class="cell">
+                            <canvas class="mini-chart" id="chart-${coin.id}" width="150" height="20"></canvas>
+                        </div>
+                    </div>
+                `).join('');
+
+                // Draw mini charts
+                setTimeout(() => {
+                    this.spotData.forEach(coin => {
+                        if (coin.sparkline_in_7d) {
+                            this.drawMiniChart(`chart-${coin.id}`, coin.sparkline_in_7d.price);
+                        }
+                    });
+                }, 100);
+
+                document.getElementById('spotCount').textContent = this.spotData.length;
+            }
+
+            updateFuturesTable() {
+                const tableBody = document.getElementById('futuresTableBody');
+                
+                tableBody.innerHTML = this.futuresData.map(future => {
+                    const basis = future.basis ? (future.basis * 100).toFixed(3) : '-';
+                    const funding = future.funding_rate ? (future.funding_rate * 100).toFixed(4) : '-';
+                    const nextFunding = future.next_funding_time ? 
+                        new Date(future.next_funding_time).toLocaleTimeString() : '-';
+                    
+                    return `
+                        <div class="table-row">
+                            <div class="cell cell-exchange">${future.exchange.toUpperCase()}</div>
+                            <div class="cell cell-symbol">${future.product}</div>
+                            <div class="cell cell-price">$${this.formatPrice(future.mark_price)}</div>
+                            <div class="cell ${future.basis > 0 ? 'cell-positive' : future.basis < 0 ? 'cell-negative' : ''}">${basis}%</div>
+                            <div class="cell ${future.funding_rate > 0 ? 'cell-positive' : future.funding_rate < 0 ? 'cell-negative' : ''}">${funding}%</div>
+                            <div class="cell">$${this.formatVolume(future.open_interest)}</div>
+                            <div class="cell">$${this.formatVolume(future.volume_24h)}</div>
+                            <div class="cell">${nextFunding}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                document.getElementById('futuresCount').textContent = this.futuresData.length;
+                this.updateFuturesStats();
+            }
+
+            updateOptionsTable() {
+                const tableBody = document.getElementById('optionsTableBody');
+                
+                tableBody.innerHTML = this.optionsData.map(option => {
+                    const typeColor = option.type === 'call' ? 'cell-positive' : 'cell-negative';
+                    
+                    return `
+                        <div class="table-row">
+                            <div class="cell ${typeColor}">${option.type.toUpperCase()}</div>
+                            <div class="cell cell-symbol">${option.product}</div>
+                            <div class="cell">$${option.strike.toLocaleString()}</div>
+                            <div class="cell cell-price">$${option.mark_price.toFixed(2)}</div>
+                            <div class="cell">${(option.implied_volatility * 100).toFixed(1)}%</div>
+                            <div class="cell">${option.delta.toFixed(3)}</div>
+                            <div class="cell cell-negative">${option.theta.toFixed(2)}</div>
+                            <div class="cell">$${this.formatVolume(option.volume_24h)}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                document.getElementById('optionsCount').textContent = this.optionsData.length;
+                this.updateOptionsStats();
+            }
+
+            updateFundingTable() {
+                const tableBody = document.getElementById('fundingTableBody');
+                
+                tableBody.innerHTML = this.fundingData.map(funding => {
+                    const currentRate = (funding.current_rate * 100).toFixed(4);
+                    const predictedRate = (funding.predicted_rate * 100).toFixed(4);
+                    const avgRate = (funding.avg_rate_7d * 100).toFixed(4);
+                    const nextTime = new Date(funding.next_funding_time).toLocaleTimeString();
+                    
+                    return `
+                        <div class="table-row">
+                            <div class="cell cell-exchange">${funding.exchange.toUpperCase()}</div>
+                            <div class="cell cell-symbol">${funding.product}</div>
+                            <div class="cell ${funding.current_rate > 0 ? 'cell-positive' : funding.current_rate < 0 ? 'cell-negative' : ''}">${currentRate}%</div>
+                            <div class="cell ${funding.predicted_rate > 0 ? 'cell-positive' : funding.predicted_rate < 0 ? 'cell-negative' : ''}">${predictedRate}%</div>
+                            <div class="cell">${avgRate}%</div>
+                            <div class="cell">$${this.formatVolume(funding.open_interest)}</div>
+                            <div class="cell">${nextTime}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                this.updateFundingStats();
+            }
+
+            updateGlobalStats(globalData) {
+                const data = globalData.data || globalData;
+                
+                document.getElementById('totalMarketCap').textContent = '$' + this.formatMarketCap(data.total_market_cap.usd);
+                document.getElementById('totalVolume').textContent = '$' + this.formatVolume(data.total_volume.usd);
+                document.getElementById('btcDominance').textContent = data.market_cap_percentage.btc.toFixed(2) + '%';
+                document.getElementById('activeCoins').textContent = data.active_cryptocurrencies;
+                
+                const mcChange = data.market_cap_change_percentage_24h_usd || 0;
+                const mcChangeEl = document.getElementById('marketCapChange');
+                mcChangeEl.textContent = (mcChange >= 0 ? '▲ ' : '▼ ') + Math.abs(mcChange).toFixed(2) + '%';
+                mcChangeEl.className = 'stat-change ' + (mcChange >= 0 ? 'positive' : 'negative');
+            }
+
+            updateFuturesStats() {
+                // Calculate total OI and volume
+                const totalOI = this.futuresData.reduce((sum, f) => sum + f.open_interest, 0);
+                const totalVolume = this.futuresData.reduce((sum, f) => sum + f.volume_24h, 0);
+                const avgFunding = this.futuresData
+                    .filter(f => f.funding_rate !== null)
+                    .reduce((sum, f, _, arr) => sum + f.funding_rate / arr.length, 0);
+
+                document.getElementById('totalOI').textContent = '$' + this.formatVolume(totalOI);
+                document.getElementById('futuresVolume').textContent = '$' + this.formatVolume(totalVolume);
+                document.getElementById('avgFunding').textContent = (avgFunding * 100).toFixed(4) + '%';
+                document.getElementById('activeFutures').textContent = this.futuresData.length;
+            }
+
+            updateOptionsStats() {
+                // Calculate options statistics
+                const totalOI = this.optionsData.reduce((sum, o) => sum + o.open_interest, 0);
+                const calls = this.optionsData.filter(o => o.type === 'call');
+                const puts = this.optionsData.filter(o => o.type === 'put');
+                const putCallRatio = puts.length / (calls.length || 1);
+                const avgIV = this.optionsData.reduce((sum, o, _, arr) => sum + o.implied_volatility / arr.length, 0);
+
+                document.getElementById('optionsOI').textContent = '$' + this.formatVolume(totalOI);
+                document.getElementById('putCallRatio').textContent = putCallRatio.toFixed(2);
+                document.getElementById('avgIV').textContent = (avgIV * 100).toFixed(1) + '%';
+                document.getElementById('activeOptions').textContent = this.optionsData.length;
+            }
+
+            updateFundingStats() {
+                // Calculate funding statistics
+                const rates = this.fundingData.map(f => f.current_rate);
+                const avgRate = rates.reduce((sum, r, _, arr) => sum + r / arr.length, 0);
+                const maxRate = Math.max(...rates);
+                const minRate = Math.min(...rates);
+                const spread = maxRate - minRate;
+
+                document.getElementById('avgFundingRate').textContent = (avgRate * 100).toFixed(4) + '%';
+                document.getElementById('maxFundingRate').textContent = (maxRate * 100).toFixed(4) + '%';
+                document.getElementById('minFundingRate').textContent = (minRate * 100).toFixed(4) + '%';
+                document.getElementById('fundingSpread').textContent = (spread * 100).toFixed(4) + '%';
+            }
+
+            updateTrendingCoins() {
+                const trendingList = document.getElementById('trendingList');
+                trendingList.innerHTML = this.trendingData.slice(0, 5).map((coin, index) => `
+                    <div style="padding: 8px; background: #111; border: 1px solid #222; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center;">
+                            <span style="color: #ff8800; font-weight: bold; margin-right: 10px;">#${index + 1}</span>
+                            <span style="color: #fff;">${coin.item.symbol}</span>
+                        </div>
+                        <span style="color: #00ff00; font-size: 11px;">Score: ${coin.item.score}</span>
+                    </div>
+                `).join('');
+            }
+
+            updatePersonaStatus(persona, task) {
+                const badges = document.querySelectorAll('.persona-badge');
+                badges.forEach(badge => {
+                    if (badge.textContent.toLowerCase() === persona.toLowerCase()) {
+                        badge.classList.add('active');
+                        setTimeout(() => badge.classList.remove('active'), 3000);
+                    }
+                });
+                
+                this.addLog(`${persona} persona: ${task}`);
+            }
+
+            drawMiniChart(canvasId, data) {
+                const canvas = document.getElementById(canvasId);
+                if (!canvas || !data) return;
+                
+                const ctx = canvas.getContext('2d');
+                const width = canvas.width;
+                const height = canvas.height;
+                
+                ctx.clearRect(0, 0, width, height);
+                
+                const min = Math.min(...data);
+                const max = Math.max(...data);
+                const range = max - min;
+                
+                ctx.strokeStyle = data[data.length - 1] > data[0] ? '#00ff00' : '#ff0000';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                
+                data.forEach((value, index) => {
+                    const x = (index / (data.length - 1)) * width;
+                    const y = height - ((value - min) / range) * height;
+                    
+                    if (index === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                });
+                
+                ctx.stroke();
+            }
+
+            startClock() {
+                const updateTime = () => {
+                    const now = new Date();
+                    document.getElementById('currentTime').textContent = 
+                        now.toTimeString().split(' ')[0];
+                };
+                
+                updateTime();
+                setInterval(updateTime, 1000);
+            }
+
+            formatPrice(price) {
+                if (price >= 1000) {
+                    return price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                } else if (price >= 1) {
+                    return price.toFixed(2);
+                } else {
+                    return price.toFixed(6);
+                }
+            }
+
+            formatVolume(volume) {
+                if (volume >= 1e9) {
+                    return (volume / 1e9).toFixed(2) + 'B';
+                } else if (volume >= 1e6) {
+                    return (volume / 1e6).toFixed(2) + 'M';
+                } else {
+                    return (volume / 1e3).toFixed(2) + 'K';
+                }
+            }
+
+            formatMarketCap(marketCap) {
+                if (marketCap >= 1e12) {
+                    return (marketCap / 1e12).toFixed(2) + 'T';
+                } else if (marketCap >= 1e9) {
+                    return (marketCap / 1e9).toFixed(2) + 'B';
+                } else {
+                    return (marketCap / 1e6).toFixed(2) + 'M';
+                }
+            }
+
+            addLog(message) {
+                const log = document.getElementById('systemLog');
+                const time = new Date().toTimeString().split(' ')[0];
+                const entry = document.createElement('div');
+                entry.textContent = `[${time}] ${message}`;
+                log.appendChild(entry);
+                log.scrollTop = log.scrollHeight;
+                
+                while (log.children.length > 50) {
+                    log.removeChild(log.firstChild);
+                }
+            }
+
+            cleanup() {
+                Object.values(this.updateIntervals).forEach(interval => clearInterval(interval));
+            }
+        }
+
+        // Global functions
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            
+            dashboard.currentTab = tabName;
+            
+            // Refresh data for the selected tab
+            if (tabName === 'spot') {
+                dashboard.updateSpotTable();
+            } else if (tabName === 'futures') {
+                dashboard.updateFuturesTable();
+            } else if (tabName === 'options') {
+                dashboard.updateOptionsTable();
+            } else if (tabName === 'funding') {
+                dashboard.updateFundingTable();
+            }
+        }
+
+        // Initialize dashboard
+        const dashboard = new EnhancedBloombergDashboard();
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            dashboard.cleanup();
+        });
+    </script>
+</body>
+</html>
