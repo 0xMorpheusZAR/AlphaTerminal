@@ -11,6 +11,7 @@ import RevenueAnalysis from "@/pages/revenue-analysis";
 import MonteCarlo from "@/pages/monte-carlo";
 import SuccessStories from "@/pages/success-stories";
 import VeloNews from "@/pages/velo-news-live";
+import CoinGeckoProShowcase from "@/pages/coingecko-pro-showcase";
 import NotFound from "@/pages/not-found";
 import Sidebar from "@/components/layout/sidebar";
 
@@ -29,6 +30,7 @@ function Router() {
           <Route path="/monte-carlo" component={MonteCarlo} />
           <Route path="/success-stories" component={SuccessStories} />
           <Route path="/news" component={VeloNews} />
+          <Route path="/coingecko-pro" component={CoinGeckoProShowcase} />
           <Route component={NotFound} />
         </Switch>
       </main>

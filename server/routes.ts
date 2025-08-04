@@ -8,6 +8,7 @@ import { defiLlamaService } from "./services/defillama";
 import { defiLlamaNarrativesService } from "./services/defillama-narratives";
 import { monteCarloService } from "./services/monte-carlo";
 import { advancedAnalyticsService } from "./services/advanced-analytics";
+import { coinGeckoProShowcaseService } from "./services/coingecko-pro-showcase";
 import { insertTokenSchema, insertNewsItemSchema, insertDefiProtocolSchema, insertHyperliquidMetricsSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -511,6 +512,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Liquidity spikes error:", error);
       res.status(500).json({ message: "Failed to fetch liquidity spike data" });
+    }
+  });
+
+  // CoinGecko Pro Showcase endpoint
+  app.get("/api/coingecko-pro/showcase", async (req, res) => {
+    try {
+      const { timeframe } = req.query;
+      const data = await coinGeckoProShowcaseService.getShowcaseData(timeframe as string);
+      res.json(data);
+    } catch (error) {
+      console.error("CoinGecko Pro showcase error:", error);
+      res.status(500).json({ message: "Failed to fetch showcase data" });
     }
   });
 

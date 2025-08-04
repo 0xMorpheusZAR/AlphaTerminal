@@ -10,6 +10,7 @@ const navigation = [
   { name: "Monte Carlo", href: "/monte-carlo", icon: "fas fa-dice" },
   { name: "Success Stories", href: "/success-stories", icon: "fas fa-trophy" },
   { name: "Velo News", href: "/news", icon: "fas fa-newspaper", badge: true },
+  { name: "CoinGecko Pro", href: "/coingecko-pro", icon: "fas fa-rocket", pro: true },
 ];
 
 export default function Sidebar() {
@@ -46,6 +47,11 @@ export default function Sidebar() {
                   </span>
                   {item.badge && (
                     <div className="w-2 h-2 bg-success rounded-full animate-pulse ml-auto"></div>
+                  )}
+                  {item.pro && (
+                    <span className="ml-auto bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">
+                      PRO
+                    </span>
                   )}
                 </div>
               </Link>

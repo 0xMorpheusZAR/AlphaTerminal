@@ -1,3 +1,6 @@
 [submodule "superclaude"]
 	path = superclaude
 	url = https://github.com/SuperClaude-Org/SuperClaude_Framework.git
+[submodule "magic-mcp"]
+	path = magic-mcp
+	url = https://github.com/21st-dev/magic-mcp.git

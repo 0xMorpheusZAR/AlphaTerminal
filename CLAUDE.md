@@ -95,9 +95,18 @@ npm run dev
 
 ## MCP Servers Available
 1. **CoinGecko MCP** - Cryptocurrency market data
-2. **Context7** - Documentation retrieval
-3. **Sequential** - Complex reasoning
-4. **Magic** - UI component generation
+   - Full CoinGecko Pro API access
+   - Real-time market analytics
+   - Historical data analysis
+
+2. **Magic MCP** - AI-powered UI component generation
+   - Natural language to UI components
+   - Modern component library from 21st.dev
+   - TypeScript support and real-time preview
+   - Use `/ui` command to create components
+
+3. **Context7** - Documentation retrieval
+4. **Sequential** - Complex reasoning
 5. **Playwright** - Browser automation
 
 ## Project Structure

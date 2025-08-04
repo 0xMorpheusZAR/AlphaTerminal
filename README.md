@@ -249,18 +249,40 @@ The app uses Drizzle ORM for database operations when PostgreSQL is configured.
 - Dune: 1000 executions/month
 
 ### MCP (Model Context Protocol) Integration
-The project includes optional MCP server integration for CoinGecko:
+The project includes MCP server integration for enhanced AI capabilities:
 
-1. **Setup MCP Configuration**:
+#### Available MCP Servers:
+
+1. **CoinGecko Pro MCP** - Cryptocurrency market data and analytics
+   - Full access to CoinGecko Pro API features
+   - Real-time market data and historical analysis
+   - Advanced analytics and insights
+
+2. **Magic MCP** - AI-powered UI component generation
+   - Create beautiful UI components with natural language
+   - Access to modern component library
+   - Real-time preview and TypeScript support
+   - Powered by [21st.dev](https://21st.dev)
+
+#### Setup Instructions:
+
+1. **Copy the MCP configuration template**:
 ```bash
 cp .mcp.json.example .mcp.json
 ```
 
-2. **Configure your CoinGecko Pro API key** in `.mcp.json`
+2. **Configure your API keys** in `.mcp.json`:
+   - `COINGECKO_PRO_API_KEY`: Your CoinGecko Pro API key
+   - `API_KEY` (for Magic): Get from [21st.dev Magic Console](https://21st.dev/magic/console)
 
-3. **Use with Claude Code**: The MCP server provides enhanced AI assistance when using Claude Code for development
+3. **Use with Claude Code**: The MCP servers provide enhanced AI assistance for:
+   - Market data analysis and visualization
+   - UI component generation and refinement
+   - Real-time data integration
 
-For more information about MCP, visit: https://modelcontextprotocol.io/
+For more information:
+- MCP Protocol: https://modelcontextprotocol.io/
+- Magic MCP: https://21st.dev/magic
 
 ### SuperClaude Framework Integration
 This project includes the SuperClaude v3 framework for enhanced development workflows:
