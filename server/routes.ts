@@ -12,6 +12,7 @@ import { coinGeckoProShowcaseService } from "./services/coingecko-pro-showcase";
 import { magicMCPService } from "./services/magic-mcp-integration";
 import { insertTokenSchema, insertNewsItemSchema, insertDefiProtocolSchema, insertHyperliquidMetricsSchema } from "@shared/schema";
 import { z } from "zod";
+import { registerApiHealthRoutes } from "./routes/api-health";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Token routes
@@ -576,6 +577,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to check Magic MCP status" });
     }
   });
+
+  // Register API health check routes
+  registerApiHealthRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;
