@@ -75,8 +75,8 @@ Token Tracker is a comprehensive cryptocurrency analytics platform designed to h
 ## 📋 Prerequisites
 
 - Node.js 18.0.0 or higher
-- PostgreSQL database
-- API keys for external services (optional, app works with mock data)
+- PostgreSQL database (optional - app works with in-memory storage)
+- API keys for external services (optional - app works with mock data)
 
 ## 🚀 Quick Start
 
@@ -91,16 +91,28 @@ cd token-tracker
 npm install
 ```
 
+**Note for Windows users**: When running the development server, use:
+```bash
+set NODE_ENV=development && npx tsx server/index.ts
+```
+
 ### 3. Environment Setup
-Create a `.env` file in the root directory:
+Copy the example environment file and configure it:
+
+```bash
+cp .env.example .env
+```
+
+Then edit `.env` with your configuration:
 
 ```env
-# Database
+# Database (Optional - leave empty for in-memory storage)
 DATABASE_URL=postgresql://user:password@localhost:5432/token_tracker
 
-# API Keys (Optional - app works without them)
+# API Keys (Optional - app works with mock data)
 COINGECKO_API_KEY=your_coingecko_api_key
 VELO_API_KEY=your_velo_api_key
+DEFILLAMA_API_KEY=your_defillama_api_key
 DUNE_API_KEY=your_dune_api_key
 
 # Server
@@ -108,15 +120,25 @@ PORT=5000
 NODE_ENV=development
 ```
 
-### 4. Database Setup
+### 4. Database Setup (Optional)
+If you have a PostgreSQL database configured:
 ```bash
 # Push schema to database
 npm run db:push
 ```
 
+**Note**: If no database is configured, the app will use in-memory storage with mock data.
+
 ### 5. Start Development Server
+
+**Linux/macOS**:
 ```bash
 npm run dev
+```
+
+**Windows**:
+```bash
+set NODE_ENV=development && npx tsx server/index.ts
 ```
 
 The application will be available at:
@@ -193,18 +215,43 @@ Advanced statistical modeling that:
 ## 🔧 Configuration
 
 ### Mock Data Mode
-When API keys are not configured, the application automatically uses realistic mock data. This allows for:
-- Development without API costs
+The application supports two mock data modes:
+
+1. **No Database**: When DATABASE_URL is not set, the app uses in-memory storage
+2. **No API Keys**: When API keys are not configured, external APIs return mock data
+
+This allows for:
+- Development without infrastructure dependencies
 - Testing and demonstration
 - Offline functionality
+- Zero-cost development
 
 ### Database Configuration
-The application uses PostgreSQL with Drizzle ORM. Configure your database connection in the `DATABASE_URL` environment variable.
+The application supports two storage modes:
+
+1. **PostgreSQL** (Production): Configure `DATABASE_URL` with your PostgreSQL connection string
+2. **In-Memory** (Development): Leave `DATABASE_URL` empty to use mock storage
+
+The app uses Drizzle ORM for database operations when PostgreSQL is configured.
 
 ### API Rate Limits
 - CoinGecko: 500 calls/minute (Pro tier)
 - Velo: 100 calls/minute
 - Dune: 1000 executions/month
+
+### MCP (Model Context Protocol) Integration
+The project includes optional MCP server integration for CoinGecko:
+
+1. **Setup MCP Configuration**:
+```bash
+cp .mcp.json.example .mcp.json
+```
+
+2. **Configure your CoinGecko Pro API key** in `.mcp.json`
+
+3. **Use with Claude Code**: The MCP server provides enhanced AI assistance when using Claude Code for development
+
+For more information about MCP, visit: https://modelcontextprotocol.io/
 
 ## 📊 Performance
 

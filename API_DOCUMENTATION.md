@@ -12,11 +12,14 @@ http://localhost:5000/api
 
 ## Authentication
 
-Currently, the API does not require authentication for public endpoints. However, the following API keys are required for full functionality:
+The API does not require authentication for public endpoints. The application integrates with external services using API keys configured in the environment:
 
-- `COINGECKO_API_KEY` - For cryptocurrency market data
-- `VELO_API_KEY` - For real-time crypto news
-- `DUNE_API_KEY` - For on-chain analytics
+- `COINGECKO_API_KEY` - For cryptocurrency market data (optional, uses mock data if not provided)
+- `VELO_API_KEY` - For real-time crypto news (optional, uses mock data if not provided)
+- `DEFILLAMA_API_KEY` - For DeFi protocol data (optional, public endpoints available)
+- `DUNE_API_KEY` - For on-chain analytics (optional, uses mock data if not provided)
+
+**Note**: When API keys are not configured, the application automatically falls back to realistic mock data, allowing full functionality in development mode.
 
 ## API Endpoints
 

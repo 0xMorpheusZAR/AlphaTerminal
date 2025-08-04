@@ -20,6 +20,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, gte, sql, and } from "drizzle-orm";
+import { MockStorage } from "./mock-storage";
 
 export interface IStorage {
   // Token methods
@@ -214,4 +215,5 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-export const storage = new DatabaseStorage();
+// Use mock storage if database is not available
+export const storage: IStorage = db ? new DatabaseStorage() : new MockStorage();

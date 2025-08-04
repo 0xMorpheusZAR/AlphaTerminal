@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "coingecko_mcp_local": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@coingecko/coingecko-mcp"
+      ],
+      "env": {
+        "COINGECKO_PRO_API_KEY": "your_coingecko_pro_api_key_here",
+        "COINGECKO_ENVIRONMENT": "pro"
+      }
+    }
+  }
+}
