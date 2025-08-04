@@ -59,22 +59,6 @@ export default function Sidebar() {
           })}
         </nav>
       </div>
-      
-      <div className="absolute bottom-4 left-4 right-4">
-        <div className="bg-muted rounded-lg p-3 text-xs">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-muted-foreground">API Status</span>
-            <div className="flex space-x-1">
-              <div className="w-2 h-2 bg-success rounded-full" title="CoinGecko Pro"></div>
-              <div className="w-2 h-2 bg-success rounded-full" title="Velo Data"></div>
-              <div className="w-2 h-2 bg-warning rounded-full" title="Dune Analytics"></div>
-            </div>
-          </div>
-          <p className="text-muted-foreground">
-            Last update: <span>2 mins ago</span>
-          </p>
-        </div>
-      </div>
     </aside>
   );
 }
