@@ -9,6 +9,7 @@ import { defiLlamaNarrativesService } from "./services/defillama-narratives";
 import { monteCarloService } from "./services/monte-carlo";
 import { advancedAnalyticsService } from "./services/advanced-analytics";
 import { coinGeckoProShowcaseService } from "./services/coingecko-pro-showcase";
+import { magicMCPService } from "./services/magic-mcp-integration";
 import { insertTokenSchema, insertNewsItemSchema, insertDefiProtocolSchema, insertHyperliquidMetricsSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -524,6 +525,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("CoinGecko Pro showcase error:", error);
       res.status(500).json({ message: "Failed to fetch showcase data" });
+    }
+  });
+
+  // Magic MCP Integration endpoints
+  app.post("/api/magic-mcp/generate", async (req, res) => {
+    try {
+      const { prompt, searchQuery, projectPath, currentFile } = req.body;
+      
+      if (!prompt) {
+        return res.status(400).json({ message: "Prompt is required" });
+      }
+
+      const result = await magicMCPService.generateComponent({
+        prompt,
+        searchQuery: searchQuery || prompt.slice(0, 50),
+        projectPath: projectPath || process.cwd(),
+        currentFile
+      });
+
+      if (!result.success) {
+        return res.status(500).json({ message: result.error });
+      }
+
+      res.json({ 
+        success: true,
+        code: result.code,
+        message: "Component generated successfully"
+      });
+    } catch (error) {
+      console.error("Magic MCP generation error:", error);
+      res.status(500).json({ message: "Failed to generate component" });
+    }
+  });
+
+  app.get("/api/magic-mcp/status", async (req, res) => {
+    try {
+      const status = await magicMCPService.checkConfiguration();
+      res.json(status);
+    } catch (error) {
+      console.error("Magic MCP status error:", error);
+      res.status(500).json({ message: "Failed to check Magic MCP status" });
     }
   });
 
