@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlphaTerminal - Loading</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="dark-theme">
+    
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <div class="alpha-logo">
+                <div class="logo-text">ALPHA</div>
+                <div class="logo-subtext">TERMINAL</div>
+            </div>
+            <div class="loading-spinner"></div>
+            <div class="loading-status" id="loading-status">Initializing quantum encryption...</div>
+            
+            <!-- Auto-redirect button that appears after loading -->
+            <div id="redirect-section" style="display: none; margin-top: 30px;">
+                <button id="enter-terminal" class="terminal-btn">ENTER TERMINAL</button>
+                <p class="redirect-text">Click to access the dashboard or wait for auto-redirect...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class LoadingScreen {
+            constructor() {
+                this.loadingMessages = [
+                    'Initializing quantum encryption...',
+                    'Connecting to satellite networks...',
+                    'Loading CoinGecko Pro API...',
+                    'Establishing secure channels...',
+                    'Synchronizing market data...',
+                    'Calibrating neural networks...',
+                    'Activating trading algorithms...',
+                    'System ready. Welcome to the Matrix.'
+                ];
+                
+                this.init();
+            }
+
+            async init() {
+                console.log('🚀 AlphaTerminal Loading Screen');
+                await this.showLoadingSequence();
+                this.showRedirectOptions();
+            }
+
+            async showLoadingSequence() {
+                const loadingStatus = document.getElementById('loading-status');
+                
+                for (let i = 0; i < this.loadingMessages.length; i++) {
+                    await this.typeMessage(loadingStatus, this.loadingMessages[i]);
+                    
+                    // Realistic loading delays
+                    const delay = i === 0 ? 800 : 
+                                 i === this.loadingMessages.length - 1 ? 1200 : 
+                                 400 + Math.random() * 600;
+                    
+                    await this.delay(delay);
+                }
+            }
+
+            async typeMessage(element, message) {
+                element.textContent = '';
+                for (let i = 0; i < message.length; i++) {
+                    element.textContent += message[i];
+                    await this.delay(30 + Math.random() * 20);
+                }
+            }
+
+            delay(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            showRedirectOptions() {
+                const redirectSection = document.getElementById('redirect-section');
+                const enterButton = document.getElementById('enter-terminal');
+                
+                // Show redirect options
+                redirectSection.style.display = 'block';
+                
+                // Add click handler
+                enterButton.addEventListener('click', () => {
+                    window.location.href = '/terminal.html';
+                });
+                
+                // Auto-redirect after 3 seconds
+                setTimeout(() => {
+                    window.location.href = '/terminal.html';
+                }, 3000);
+            }
+        }
+
+        // Initialize loading screen when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new LoadingScreen();
+        });
+    </script>
+
+    <style>
+        .terminal-btn {
+            background: linear-gradient(135deg, var(--accent-green), #00cc33);
+            border: 2px solid var(--accent-green);
+            color: var(--bg-primary);
+            padding: 12px 24px;
+            font-family: var(--font-mono);
+            font-weight: 600;
+            font-size: 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .terminal-btn:hover {
+            background: var(--accent-green);
+            box-shadow: var(--shadow-glow);
+            transform: translateY(-2px);
+        }
+        
+        .redirect-text {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 15px;
+            font-family: var(--font-mono);
+        }
+    </style>
+
+</body>
+</html>

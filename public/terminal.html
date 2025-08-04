@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AlphaTerminal - Professional Crypto Analytics</title>
+    <title>AlphaTerminal - Crypto Dashboard</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     
     <!-- Fonts -->
@@ -21,23 +21,12 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="/css/alpha-optimized.css">
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body class="dark-theme">
-    <!-- Loading Screen -->
-    <div id="loading-screen" class="loading-screen">
-        <div class="loading-content">
-            <div class="alpha-logo">
-                <div class="logo-text">ALPHA</div>
-                <div class="logo-subtext">TERMINAL</div>
-            </div>
-            <div class="loading-spinner"></div>
-            <div class="loading-status" id="loading-status">Initializing quantum encryption...</div>
-        </div>
-    </div>
-
-    <!-- Main Application -->
-    <div id="app" class="app-container" style="display: none;">
+    
+    <!-- Main Application (Direct Terminal Interface) -->
+    <div id="app" class="app-container">
         
         <!-- Top Navigation Bar -->
         <header class="top-nav">
@@ -112,7 +101,7 @@
                         </div>
                     </div>
                     <div class="top-cryptos-table" id="top-cryptos-table">
-                        <div style="color: #666; text-align: center; padding: 20px;">Loading market data...</div>
+                        <!-- Dynamic content -->
                     </div>
                 </div>
             </div>
@@ -160,7 +149,7 @@
                 </div>
                 <div class="panel-content">
                     <div class="orderbook-container" id="orderbook-container">
-                        <div style="color: #666; text-align: center; padding: 20px;">Order book data loading...</div>
+                        <!-- Dynamic order book data -->
                     </div>
                 </div>
             </div>
@@ -186,7 +175,7 @@
                         </div>
                     </div>
                     <div class="defi-protocols-list" id="defi-protocols">
-                        <div style="color: #666; text-align: center; padding: 20px;">DeFi data loading...</div>
+                        <!-- Dynamic DeFi protocol data -->
                     </div>
                 </div>
             </div>
@@ -216,7 +205,7 @@
                         </div>
                     </div>
                     <div class="derivatives-table" id="derivatives-table">
-                        <div style="color: #666; text-align: center; padding: 20px;">Derivatives data loading...</div>
+                        <!-- Dynamic derivatives data -->
                     </div>
                 </div>
             </div>
@@ -241,7 +230,7 @@
                         </div>
                     </div>
                     <div class="nft-collections" id="nft-collections">
-                        <div style="color: #666; text-align: center; padding: 20px;">NFT data loading...</div>
+                        <!-- Dynamic NFT collections -->
                     </div>
                 </div>
             </div>
@@ -261,13 +250,13 @@
                         </div>
                     </div>
                     <div class="trending-topics" id="trending-topics">
-                        <div style="color: #666; text-align: center; padding: 20px;">Sentiment data loading...</div>
+                        <!-- Dynamic trending data -->
                     </div>
                 </div>
             </div>
 
-            <!-- Panel 8: Portfolio -->
-            <div class="dashboard-panel portfolio-panel" data-panel="portfolio">
+            <!-- Panel 8: Portfolio (if authenticated) -->
+            <div class="dashboard-panel portfolio-panel" data-panel="portfolio" style="display: none;">
                 <div class="panel-header">
                     <h3 class="panel-title">PORTFOLIO</h3>
                     <div class="panel-controls">
@@ -287,7 +276,7 @@
                         </div>
                     </div>
                     <div class="portfolio-holdings" id="portfolio-holdings">
-                        <div style="color: #666; text-align: center; padding: 20px;">Portfolio data loading...</div>
+                        <!-- Dynamic portfolio holdings -->
                     </div>
                 </div>
             </div>
@@ -325,98 +314,12 @@
 
     </div>
 
-    <!-- Load working dashboard -->
-    <script src="/js/working-dashboard.js"></script>
-    
-    <script>
-        // Enhanced AlphaTerminal with full dashboard functionality
-        class AlphaTerminal {
-            constructor() {
-                this.loadingMessages = [
-                    'Initializing quantum encryption...',
-                    'Connecting to satellite networks...',
-                    'Loading CoinGecko Pro API...',
-                    'Establishing secure channels...',
-                    'Synchronizing market data...',
-                    'Calibrating neural networks...',
-                    'Activating trading algorithms...',
-                    'System ready. Welcome to the Matrix.',
-                    'The Matrix Awakens You...'
-                ];
-                this.dashboard = null;
-                this.init();
-            }
-
-            async init() {
-                console.log('🚀 Starting AlphaTerminal...');
-                await this.showLoading();
-                this.showDashboard();
-            }
-
-            async showLoading() {
-                const status = document.getElementById('loading-status');
-                
-                for (let i = 0; i < this.loadingMessages.length; i++) {
-                    const message = this.loadingMessages[i];
-                    
-                    if (message === 'The Matrix Awakens You...') {
-                        status.style.color = '#00ff41';
-                        status.style.fontSize = '1.2rem';
-                        status.style.fontWeight = '600';
-                        status.style.textShadow = '0 0 20px rgba(0, 255, 65, 0.8)';
-                    }
-                    
-                    status.textContent = message;
-                    
-                    const delay = i === this.loadingMessages.length - 1 ? 2000 : 800;
-                    await this.delay(delay);
-                }
-            }
-
-            showDashboard() {
-                const loading = document.getElementById('loading-screen');
-                const app = document.getElementById('app');
-                
-                loading.style.transition = 'opacity 1s ease-out';
-                loading.style.opacity = '0';
-                
-                setTimeout(() => {
-                    loading.style.display = 'none';
-                    app.style.display = 'flex';
-                    
-                    // Initialize the working dashboard
-                    this.dashboard = new WorkingDashboard();
-                    
-                    // Start time updates
-                    this.startTime();
-                    
-                    console.log('✅ AlphaTerminal is FULLY OPERATIONAL!');
-                }, 1000);
-            }
-
-            startTime() {
-                setInterval(() => {
-                    const now = new Date();
-                    const time = now.toLocaleTimeString('en-US', { hour12: false });
-                    
-                    const timeEl = document.getElementById('system-time');
-                    const updateEl = document.getElementById('last-update');
-                    
-                    if (timeEl) timeEl.textContent = time;
-                    if (updateEl) updateEl.textContent = time;
-                }, 1000);
-            }
-
-            delay(ms) {
-                return new Promise(resolve => setTimeout(resolve, ms));
-            }
-        }
-
-        // Start when page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            new AlphaTerminal();
-        });
-    </script>
+    <!-- Scripts -->
+    <script src="/js/utils.js"></script>
+    <script src="/js/websocket.js"></script>
+    <script src="/js/chart.js"></script>
+    <script src="/js/dashboard.js"></script>
+    <script src="/js/terminal.js"></script>
 
 </body>
 </html>
