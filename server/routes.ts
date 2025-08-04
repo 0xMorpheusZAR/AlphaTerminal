@@ -162,7 +162,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get data directly from Velo API
       const coinArray = coins ? (coins as string).split(',') : undefined;
-      const veloNews = await veloService.getNews(Number(limit), coinArray);
+      const veloNews = await veloService.getNews(Number(limit));
       
       // Transform to frontend format
       const formattedNews = veloNews.map(item => ({
@@ -170,11 +170,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         title: item.headline,
         content: item.summary,
         source: item.source,
-        sourceUrl: item.link,
-        priority: item.priority,
-        coins: item.coins,
-        publishedAt: new Date(item.time).toISOString(),
-        createdAt: new Date(item.effectiveTime).toISOString()
+        sourceUrl: item.url,
+        priority: 'normal' as any,
+        coins: item.tags,
+        publishedAt: new Date(item.timestamp).toISOString(),
+        createdAt: new Date(item.timestamp).toISOString()
       }));
       
       res.json(formattedNews);
@@ -187,11 +187,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/news/sync", async (req, res) => {
     try {
       const { limit = 50, coins } = req.body;
-      const veloNews = await veloService.getNews(limit, coins);
+      const veloNews = await veloService.getNews(limit);
       const syncedNews = [];
 
       for (const newsItem of veloNews) {
-        const formattedNews = veloService.formatNewsForStorage(newsItem);
+        const formattedNews = {
+          headline: newsItem.headline,
+          summary: newsItem.summary,
+          source: newsItem.source,
+          sourceUrl: newsItem.url,
+          priority: 'normal' as any,
+          coins: newsItem.tags,
+          publishedAt: new Date(newsItem.timestamp)
+        };
         const savedNews = await storage.createNewsItem(formattedNews);
         syncedNews.push(savedNews);
       }
@@ -206,19 +214,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get historical news (past 48 hours)
   app.get("/api/news/historical", async (req, res) => {
     try {
-      const historicalNews = await veloService.getHistoricalNews(48);
+      const historicalNews = await veloService.getNews(100); // Get more news for historical
       
       // Transform to frontend format
-      const formattedNews = historicalNews.map(item => ({
+      const formattedNews = historicalNews.map((item: VeloNewsItem) => ({
         id: item.id.toString(),
         title: item.headline,
         content: item.summary,
         source: item.source,
-        sourceUrl: item.link,
-        priority: item.priority,
-        coins: item.coins,
-        publishedAt: new Date(item.time).toISOString(),
-        createdAt: new Date(item.effectiveTime).toISOString()
+        sourceUrl: item.url,
+        priority: 'normal' as any,
+        coins: item.tags,
+        publishedAt: new Date(item.timestamp).toISOString(),
+        createdAt: new Date(item.timestamp).toISOString()
       }));
       
       res.json({ 
