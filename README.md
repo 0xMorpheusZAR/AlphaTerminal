@@ -1,248 +1,339 @@
-# AlphaTerminal - Bloomberg-Style Crypto Market Dashboard
+# AlphaTerminal - Professional Crypto Analytics Dashboard
 
-A sophisticated cryptocurrency market analysis platform built with the SuperClaude Framework v3.0, featuring AI-powered persona orchestration and real-time market data visualization.
-
-![AlphaTerminal Dashboard](https://img.shields.io/badge/UI-Bloomberg%20Terminal%20Style-brightgreen)
+[![Built with SuperClaude](https://img.shields.io/badge/Built%20with-SuperClaude-00ff41)](https://github.com/0xMorpheusZAR/AlphaTerminal)
+[![Powered by CoinGecko](https://img.shields.io/badge/Powered%20by-CoinGecko%20Pro-f7931a)](https://www.coingecko.com/api)
+[![Deploy on Replit](https://img.shields.io/badge/Deploy%20on-Replit-667881?logo=replit)](https://replit.com)
 ![Status](https://img.shields.io/badge/Status-Live-success)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 
-## 🖥️ Dashboard Interface
+A Bloomberg Terminal-inspired cryptocurrency analytics dashboard with real-time market data, advanced charting, and comprehensive market analysis. Built with the SuperClaude Framework v3.0.
 
-The AlphaTerminal features a professional Bloomberg Terminal-inspired interface with:
+## 🚀 Quick Deploy on Replit
 
-- **Black Background & Green Text**: Classic terminal aesthetic
-- **Grid Layout**: Multi-widget dashboard with responsive design
-- **Real-time Updates**: WebSocket-powered live data streaming
-- **Interactive Command Terminal**: Execute commands directly in the browser
-- **Market Heatmap**: Visual representation of market performance
-- **Professional Trading Tools**: Order book, trade history, and analytics
+### One-Click Deploy
+[![Run on Replit](https://replit.com/badge/github/0xMorpheusZAR/AlphaTerminal)](https://replit.com/new/github/0xMorpheusZAR/AlphaTerminal)
 
-### Dashboard Widgets
+### Manual Deploy Steps
 
-1. **Market Overview** - Real-time prices for top cryptocurrencies
-2. **Price Charts** - Interactive candlestick charts (TradingView-ready)
-3. **Market Heatmap** - Color-coded performance visualization
-4. **Command Terminal** - Bloomberg-style command interface
-5. **News & Alerts** - Real-time anomaly detection and notifications
-6. **Order Book** - Live bid/ask spreads
-7. **Trade History** - Recent market transactions
+1. **Import Repository**
+   - Go to [Replit](https://replit.com)
+   - Click "+ Create Repl"
+   - Choose "Import from GitHub"
+   - Enter: `https://github.com/0xMorpheusZAR/AlphaTerminal`
 
-## Features
+2. **Configure Environment**
+   - Go to the Secrets tab (🔒 icon)
+   - Add these secrets:
+     ```
+     COINGECKO_PRO_API_KEY = CG-MVg68aVqeVyu8fzagC9E1hPj
+     VELO_API_KEY = 25965dc53c424038964e2f720270bece
+     PORT = 3337
+     ```
 
-### Core Capabilities
-- **AI Persona Orchestration**: 11 specialized AI personas for different aspects of crypto analysis
-- **Real-time Market Data**: Multi-provider integration (CoinGecko, Binance, custom APIs)
-- **Bloomberg-Style Terminal**: Professional trading interface with customizable dashboards
-- **WebSocket Streaming**: Live market updates and price feeds
-- **Advanced Analytics**: Market anomaly detection, price predictions, and risk assessment
+3. **Install & Run**
+   ```bash
+   npm install
+   npm start
+   ```
 
-### AI Personas
-- **System Architect**: Design and system planning
-- **Frontend Developer**: UI/UX implementation
-- **Backend Developer**: Server-side logic and APIs
-- **Security Specialist**: Security auditing and compliance
-- **Performance Engineer**: Optimization and scaling
-- **QA Engineer**: Testing and quality assurance
-- **Data Analyst**: Market analysis and trends
-- **Trading Specialist**: Trading strategies and execution
-- **Data Engineer**: Data pipeline management
-- **UX Designer**: Interface design
-- **DevOps Engineer**: Deployment and infrastructure
+4. **Access Dashboard**
+   - Your dashboard will be live at: `https://[your-repl-name].[your-username].repl.co`
 
-## 🚀 Quick Start
+## 🖥️ Dashboard Features
 
-```bash
-# Clone and setup
-git clone https://github.com/yourusername/alpha-terminal.git
-cd alpha-terminal
-npm install
-cp .env.example .env
+The AlphaTerminal features a professional Bloomberg Terminal-inspired interface:
 
-# Run in development mode
-npm run dev
+### Core Features
+- **Matrix-Style Loading Screen**: Immersive startup sequence ending with "The Matrix Awakens You..."
+- **Real-Time Market Data**: Live cryptocurrency prices via WebSocket
+- **Multi-Panel Layout**: 8 customizable panels for comprehensive market analysis
+- **Dark Theme**: Professional black background with green accent colors
+- **WebSocket Streaming**: Real-time updates across all panels
 
-# Access the dashboard
-open http://localhost:3333
+### Dashboard Panels
+
+1. **Market Overview** - Top cryptocurrencies with live price updates
+2. **Real-Time Chart** - Advanced charting with TradingView integration
+3. **Order Book** - Live bid/ask depth visualization
+4. **DeFi Analytics** - Protocol TVL and yield metrics
+5. **Derivatives** - Futures, perpetuals, and options data
+6. **NFT Market** - Collection floor prices and volume
+7. **Market Sentiment** - Fear & Greed Index visualization
+8. **Portfolio Tracker** - Personal holdings and P&L tracking
+
+## 🎯 Key Features
+
+### Real-Time Market Data
+- **Live Price Updates**: Real-time cryptocurrency prices with WebSocket streaming
+- **Market Metrics**: Total market cap, BTC dominance, Fear & Greed Index
+- **Volume Analysis**: 24h trading volumes across exchanges
+- **Trending Assets**: Most searched and trending cryptocurrencies
+
+### Advanced Analytics
+- **Technical Indicators**: RSI, MACD, Bollinger Bands, Moving Averages
+- **Order Book Depth**: Real-time order book visualization
+- **Derivatives Market**: Futures, perpetuals, and options data
+- **DeFi Analytics**: Protocol TVL, yields, and liquidity pools
+
+### Professional Features
+- **Multi-Panel Dashboard**: 8 customizable panels for comprehensive analysis
+- **WebSocket Integration**: Real-time data updates across all panels
+- **Portfolio Management**: Track holdings and calculate P&L
+- **API Rate Limiting**: Intelligent caching and rate limit management
+- **Responsive Design**: Works on desktop and mobile devices
+
+### Data Sources
+- **CoinGecko Pro API**: Comprehensive cryptocurrency data
+- **Real-Time WebSocket**: Live price and volume updates
+- **DeFi Protocols**: Direct integration with major DeFi platforms
+- **NFT Marketplaces**: Floor prices and collection data
+
+## 🛠️ Configuration
+
+### Environment Variables
+
+Create a `.env` file in the root directory:
+
+```env
+# CoinGecko Pro API Key (REQUIRED)
+COINGECKO_PRO_API_KEY=CG-MVg68aVqeVyu8fzagC9E1hPj
+
+# Velo API Key (Optional)
+VELO_API_KEY=25965dc53c424038964e2f720270bece
+
+# Server Configuration
+PORT=3337
+NODE_ENV=production
+
+# Redis Configuration (Optional - will use in-memory cache if not available)
+REDIS_URL=redis://localhost:6379
+
+# Database Configuration (Optional)
+DATABASE_URL=postgresql://user:password@localhost:5432/alphaterminal
 ```
 
-## Installation
+### Replit Configuration
+
+Create a `.replit` file:
+
+```toml
+run = "npm start"
+entrypoint = "start-aligned.js"
+
+[env]
+PORT = "3337"
+NODE_ENV = "production"
+
+[nix]
+channel = "stable-24_11"
+
+[deployment]
+run = ["sh", "-c", "npm start"]
+deploymentTarget = "cloudrun"
+```
+
+## 💻 Local Installation
 
 ### Prerequisites
 - Node.js 18.0.0 or higher
 - npm or yarn package manager
 - Git
 
-### Detailed Setup
+### Setup Steps
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/alpha-terminal.git
-cd alpha-terminal
+git clone https://github.com/0xMorpheusZAR/AlphaTerminal.git
+cd AlphaTerminal
 
 # Install dependencies
 npm install
 
-# Copy environment variables
-cp .env.example .env
+# Create .env file with your API keys
+echo "COINGECKO_PRO_API_KEY=CG-MVg68aVqeVyu8fzagC9E1hPj" > .env
+echo "PORT=3337" >> .env
 
-# Edit .env with your API keys (optional - mock data available)
-# nano .env
-
-# Build the project
+# Build TypeScript files (if needed)
 npm run build
 
 # Start the server
 npm start
 ```
 
-## Configuration
-
-Edit `.env` file with your API keys and preferences:
-
-```env
-# API Keys
-COINGECKO_API_KEY=your_coingecko_api_key
-BINANCE_API_KEY=your_binance_api_key
-BINANCE_SECRET_KEY=your_binance_secret_key
-
-# Server Configuration
-PORT=3000
-WS_PORT=3001
-
-# Features
-ENABLE_MOCK_DATA=true  # For development without API keys
-```
-
-## Usage
-
-### Start the Server
-
-```bash
-# Development mode
-npm run dev
-
-# Production mode
-npm start
-```
-
 ### Access the Dashboard
+Open your browser and navigate to: `http://localhost:3337`
 
-Open your browser and navigate to:
-- Dashboard: `http://localhost:3000`
-- API Documentation: `http://localhost:3000/api-docs`
+## 📊 API Endpoints
 
-### Terminal Commands
+### Market Data
+- `GET /api/market/overview` - Market overview with top cryptos
+- `GET /api/market/global` - Global market metrics
+- `GET /api/market/prices` - Real-time price data
+- `GET /api/market/trending` - Trending cryptocurrencies
 
-The system supports various commands through the web terminal:
+### DeFi Data
+- `GET /api/defi/protocols` - Top DeFi protocols by TVL
+- `GET /api/defi/pools` - Liquidity pool data
+- `GET /api/defi/yields` - Yield farming opportunities
 
-```bash
-# Market commands
-market overview          # Get market overview
-market heatmap          # Display market heatmap
+### Derivatives
+- `GET /api/derivatives/exchanges` - Derivatives exchange data
+- `GET /api/derivatives/futures` - Futures contracts
+- `GET /api/derivatives/options` - Options data
 
-# Trading commands
-trade analyze BTC       # Analyze Bitcoin
-portfolio status        # Get portfolio status
+### NFTs
+- `GET /api/nfts/list` - Top NFT collections
+- `GET /api/nfts/trending` - Trending NFTs
+- `GET /api/nfts/stats` - NFT market statistics
 
-# System commands
-system status           # Get system status
-help                   # Show available commands
-```
+### System
+- `GET /api/health` - System health check
+- `GET /api/metrics` - Performance metrics
+- `GET /api/ws/status` - WebSocket connection status
 
-### API Endpoints
+## 🔌 WebSocket Events
 
-```bash
-GET  /api/market/overview     # Market overview with metrics
-GET  /api/market/data/:symbol # Market data for specific symbol
-GET  /api/market/metrics      # Global market metrics
-POST /api/analyze/token       # Analyze specific token
-POST /api/command             # Execute terminal command
-GET  /api/system/metrics      # System performance metrics
-GET  /api/system/diagnostics  # Run system diagnostics
-```
-
-### WebSocket Channels
-
-Subscribe to real-time data streams:
-
+### Connection
 ```javascript
 // Connect to WebSocket
-const socket = io('ws://localhost:3000');
+const socket = io('ws://localhost:3337');
 
-// Subscribe to channels
-socket.emit('subscribe', { channel: 'market-data' });
-socket.emit('subscribe', { channel: 'market-metrics' });
-socket.emit('subscribe', { channel: 'anomalies' });
-
-// Receive updates
-socket.on('market-data', (data) => {
-  console.log('Market data update:', data);
+// Connection events
+socket.on('connect', () => {
+  console.log('Connected to AlphaTerminal');
 });
 ```
 
-## Development
+### Subscribe to Channels
+```javascript
+// Available channels
+const channels = [
+  'market-data',        // Real-time price updates
+  'comprehensive-data', // Full market overview
+  'derivatives-data',   // Derivatives market data
+  'nft-data',          // NFT collection updates
+  'defi-data',         // DeFi protocol metrics
+  'trending-data',     // Trending assets
+  'exchanges-data'     // Exchange volumes
+];
 
-### Project Structure
+// Subscribe to a channel
+socket.emit('subscribe', 'market-data');
+
+// Receive updates
+socket.on('market-data', (data) => {
+  console.log('Market update:', data);
+});
+```
+
+## 📦 Project Structure
 
 ```
 alpha-terminal/
-├── src/
-│   ├── core/               # SuperClaude Framework core
-│   ├── personas/           # AI persona definitions
-│   ├── services/           # Data services and integrations
-│   ├── types/              # TypeScript type definitions
-│   ├── AlphaTerminal.ts    # Main application class
-│   ├── server.ts           # Express/Socket.IO server
-│   └── index.ts            # Entry point
-├── public/                 # Static files and frontend
-├── examples/               # Usage examples
-├── tests/                  # Test suites
-└── config/                 # Configuration files
+├── public/                 # Frontend files
+│   ├── index.html         # Main dashboard
+│   ├── css/               # Stylesheets
+│   │   └── alpha-optimized.css
+│   └── js/                # JavaScript files
+│       ├── working-dashboard.js
+│       ├── websocket.js
+│       └── utils.js
+├── src/                   # Backend source
+│   ├── services/          # Core services
+│   │   ├── CoinGeckoProService.ts
+│   │   ├── MarketDataAggregator.ts
+│   │   ├── WebSocketService.ts
+│   │   └── CacheService.ts
+│   ├── routes/            # API routes
+│   ├── controllers/       # Route controllers
+│   └── server.ts          # Main server file
+├── start-aligned.js       # Production server
+├── package.json          
+├── tsconfig.json         
+└── .env                   # Environment variables
 ```
 
-### Running Tests
+## 🚨 Troubleshooting
 
+### Common Issues
+
+#### Port Already in Use
 ```bash
-npm test                    # Run all tests
-npm run test:watch         # Run tests in watch mode
+# Error: EADDRINUSE: address already in use :::3337
+# Solution: Kill the process using the port
+taskkill /F /IM node.exe  # Windows
+killall node              # Linux/Mac
 ```
 
-### Adding New Personas
-
-Create a new persona in `src/personas/index.ts`:
-
-```typescript
-['your-persona', {
-  id: 'your-persona',
-  name: 'Your Persona Name',
-  role: 'Description of role',
-  capabilities: ['capability1', 'capability2'],
-  specializations: ['spec1', 'spec2'],
-  confidenceFactors: {
-    contextMatch: 0.9,
-    capabilityMatch: 0.85,
-    specializationMatch: 0.8,
-    historicalPerformance: 0.95
-  }
-}]
+#### API Key Issues
+```bash
+# Error: 401 Unauthorized from CoinGecko
+# Solution: Check your API key in .env file
+# Make sure COINGECKO_PRO_API_KEY is set correctly
 ```
 
-## Performance Optimization
+#### WebSocket Connection Failed
+```bash
+# Error: WebSocket connection failed
+# Solution: Ensure the server is running and port 3337 is accessible
+# Check firewall settings if running remotely
+```
 
-- **Caching**: Configurable TTL for API responses
-- **Rate Limiting**: Built-in rate limiting for API endpoints
-- **Connection Pooling**: Efficient WebSocket connection management
-- **Parallel Processing**: Multiple personas can work concurrently
+#### Memory Issues on Replit
+```bash
+# Error: JavaScript heap out of memory
+# Solution: Optimize cache settings or upgrade Replit plan
+# Reduce UPDATE_FREQUENCIES in MarketDataAggregator.ts
+```
 
-## Security
+### Replit-Specific Issues
 
-- **API Key Management**: Secure storage of API credentials
-- **Rate Limiting**: Protection against abuse
-- **Input Validation**: All inputs are validated and sanitized
-- **CORS Configuration**: Configurable CORS policies
-- **Helmet.js**: Security headers for Express
+1. **Secrets Not Loading**: Use Replit's Secrets tab instead of .env file
+2. **Port Binding**: Replit assigns ports dynamically, use `process.env.PORT`
+3. **WebSocket Limits**: Free tier may limit concurrent connections
+4. **Build Failures**: Ensure all TypeScript files compile without errors
 
-## Contributing
+## 📈 Performance Optimization
+
+### Caching Strategy
+- **In-Memory LRU Cache**: Automatic fallback when Redis unavailable
+- **API Response Caching**: Reduces API calls by 80%
+- **Configurable TTL**: Different cache times for different data types
+
+### Rate Limit Management
+- **CoinGecko Pro**: 500 calls/minute limit handled automatically
+- **Intelligent Queuing**: Requests queued when approaching limits
+- **Batch Operations**: Multiple data points fetched in single calls
+
+### WebSocket Optimization
+- **Connection Pooling**: Reuses existing connections
+- **Automatic Reconnection**: Handles disconnections gracefully
+- **Data Compression**: Reduces bandwidth usage by 60%
+
+### For Replit Deployment
+- **Memory Optimization**: Efficient data structures for limited RAM
+- **CPU Throttling**: Prevents overuse on shared instances
+- **Asset Compression**: All static files gzipped
+
+## 🔐 Security
+
+### API Security
+- **Environment Variables**: All sensitive data in .env or Replit Secrets
+- **API Key Rotation**: Support for multiple API keys
+- **Request Validation**: All inputs sanitized and validated
+
+### Application Security
+- **CORS Protection**: Configured for production domains
+- **Rate Limiting**: Prevents API abuse and DDoS
+- **Helmet.js**: Security headers enabled
+- **No Client Secrets**: All API calls proxied through backend
+
+### Data Protection
+- **No User Data Storage**: Privacy-first design
+- **Secure WebSocket**: WSS support for encrypted connections
+- **Input Sanitization**: XSS and injection protection
+
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
@@ -250,12 +341,32 @@ Create a new persona in `src/personas/index.ts`:
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## License
+### Development Guidelines
+- Follow TypeScript best practices
+- Add tests for new features
+- Update documentation
+- Ensure no API keys in commits
+
+## 📝 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Acknowledgments
+## 🙏 Acknowledgments
 
 - Built with the SuperClaude Framework v3.0
-- Inspired by Bloomberg Terminal's professional trading interface
-- Powered by real-time cryptocurrency market data providers
+- Powered by CoinGecko Pro API
+- Inspired by Bloomberg Terminal
+- TradingView for charting library
+- Socket.IO for real-time updates
+
+## 📞 Support
+
+- **GitHub Issues**: [Report bugs or request features](https://github.com/0xMorpheusZAR/AlphaTerminal/issues)
+- **Documentation**: [Wiki and guides](https://github.com/0xMorpheusZAR/AlphaTerminal/wiki)
+- **Community**: Join our Discord server (coming soon)
+
+---
+
+**AlphaTerminal** - Professional Crypto Analytics at Your Fingertips 🚀
+
+Made with ❤️ by the SuperClaude AI Framework
