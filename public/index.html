@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlphaTerminal - Bloomberg-Style Crypto Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #000;
+            color: #00ff00;
+            overflow: hidden;
+        }
+
+        .container {
+            height: 100vh;
+            display: grid;
+            grid-template-rows: 40px 1fr 30px;
+            gap: 2px;
+        }
+
+        .header {
+            background-color: #111;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            border-bottom: 2px solid #00ff00;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: bold;
+            margin-right: 40px;
+        }
+
+        .nav {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-item {
+            cursor: pointer;
+            padding: 5px 10px;
+            transition: background-color 0.3s;
+        }
+
+        .nav-item:hover {
+            background-color: #222;
+        }
+
+        .main {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 2px;
+            padding: 2px;
+        }
+
+        .widget {
+            background-color: #111;
+            border: 1px solid #333;
+            padding: 10px;
+            overflow: auto;
+        }
+
+        .widget-header {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #ffff00;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+        }
+
+        .market-overview {
+            grid-column: 1 / 3;
+            grid-row: 1 / 2;
+        }
+
+        .price-chart {
+            grid-column: 3 / 5;
+            grid-row: 1 / 2;
+        }
+
+        .order-book {
+            grid-column: 1 / 2;
+            grid-row: 2 / 3;
+        }
+
+        .trade-history {
+            grid-column: 2 / 3;
+            grid-row: 2 / 3;
+        }
+
+        .market-heatmap {
+            grid-column: 3 / 5;
+            grid-row: 2 / 3;
+        }
+
+        .news-feed {
+            grid-column: 1 / 3;
+            grid-row: 3 / 4;
+        }
+
+        .terminal {
+            grid-column: 3 / 5;
+            grid-row: 3 / 4;
+        }
+
+        .footer {
+            background-color: #111;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            border-top: 1px solid #333;
+            font-size: 12px;
+        }
+
+        .status {
+            display: flex;
+            gap: 20px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #00ff00;
+        }
+
+        .status-indicator.error {
+            background-color: #ff0000;
+        }
+
+        .data-table {
+            width: 100%;
+            font-size: 12px;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 4px;
+            text-align: left;
+        }
+
+        .data-table th {
+            color: #ffff00;
+            border-bottom: 1px solid #333;
+        }
+
+        .positive {
+            color: #00ff00;
+        }
+
+        .negative {
+            color: #ff0000;
+        }
+
+        .terminal-input {
+            background-color: #000;
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            padding: 5px;
+            width: 100%;
+            font-family: inherit;
+            font-size: 12px;
+        }
+
+        .terminal-output {
+            height: calc(100% - 50px);
+            overflow-y: auto;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #ffff00;
+        }
+
+        .heatmap-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 2px;
+            height: calc(100% - 30px);
+        }
+
+        .heatmap-cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        .heatmap-cell:hover {
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">ALPHATERMINAL</div>
+            <nav class="nav">
+                <div class="nav-item">MARKET</div>
+                <div class="nav-item">TRADING</div>
+                <div class="nav-item">ANALYTICS</div>
+                <div class="nav-item">PORTFOLIO</div>
+                <div class="nav-item">SETTINGS</div>
+            </nav>
+        </header>
+
+        <main class="main">
+            <div class="widget market-overview">
+                <div class="widget-header">MARKET OVERVIEW</div>
+                <div class="loading">Loading market data...</div>
+                <table class="data-table" id="market-table" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th>SYMBOL</th>
+                            <th>PRICE</th>
+                            <th>24H %</th>
+                            <th>VOLUME</th>
+                            <th>MKT CAP</th>
+                        </tr>
+                    </thead>
+                    <tbody id="market-tbody"></tbody>
+                </table>
+            </div>
+
+            <div class="widget price-chart">
+                <div class="widget-header">PRICE CHART - BTC/USDT</div>
+                <div class="loading">Chart loading...</div>
+            </div>
+
+            <div class="widget order-book">
+                <div class="widget-header">ORDER BOOK</div>
+                <div class="loading">Loading orders...</div>
+            </div>
+
+            <div class="widget trade-history">
+                <div class="widget-header">TRADE HISTORY</div>
+                <div class="loading">Loading trades...</div>
+            </div>
+
+            <div class="widget market-heatmap">
+                <div class="widget-header">MARKET HEATMAP</div>
+                <div class="heatmap-grid" id="heatmap-grid"></div>
+            </div>
+
+            <div class="widget news-feed">
+                <div class="widget-header">NEWS & ALERTS</div>
+                <div id="news-content">
+                    <div style="padding: 10px; color: #ffff00;">• System initialized successfully</div>
+                </div>
+            </div>
+
+            <div class="widget terminal">
+                <div class="widget-header">COMMAND TERMINAL</div>
+                <div class="terminal-output" id="terminal-output">
+AlphaTerminal v3.0
+Type 'help' for available commands
+> </div>
+                <input type="text" class="terminal-input" id="terminal-input" placeholder="Enter command..." />
+            </div>
+        </main>
+
+        <footer class="footer">
+            <div class="status">
+                <div class="status-item">
+                    <div class="status-indicator" id="ws-status"></div>
+                    <span>WebSocket</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-indicator" id="api-status"></div>
+                    <span>API</span>
+                </div>
+                <div class="status-item">
+                    <span id="last-update">Last update: --:--:--</span>
+                </div>
+            </div>
+            <div>
+                <span id="market-metrics">Total MCap: -- | BTC Dom: --% | 24h Vol: --</span>
+            </div>
+        </footer>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // Initialize Socket.IO connection
+        const socket = io();
+        
+        // DOM elements
+        const marketTable = document.getElementById('market-table');
+        const marketTbody = document.getElementById('market-tbody');
+        const heatmapGrid = document.getElementById('heatmap-grid');
+        const terminalOutput = document.getElementById('terminal-output');
+        const terminalInput = document.getElementById('terminal-input');
+        const newsContent = document.getElementById('news-content');
+        const lastUpdate = document.getElementById('last-update');
+        const marketMetrics = document.getElementById('market-metrics');
+        const wsStatus = document.getElementById('ws-status');
+        const apiStatus = document.getElementById('api-status');
+
+        // WebSocket connection status
+        socket.on('connect', () => {
+            wsStatus.style.backgroundColor = '#00ff00';
+            addNewsItem('WebSocket connected', 'success');
+            
+            // Subscribe to channels
+            socket.emit('subscribe', { channel: 'market-data' });
+            socket.emit('subscribe', { channel: 'market-metrics' });
+            socket.emit('subscribe', { channel: 'anomalies' });
+        });
+
+        socket.on('disconnect', () => {
+            wsStatus.style.backgroundColor = '#ff0000';
+            addNewsItem('WebSocket disconnected', 'error');
+        });
+
+        // Market data updates
+        socket.on('market-data', (data) => {
+            updateMarketTable(data.slice(0, 10)); // Show top 10
+            updateLastTime();
+        });
+
+        // Market metrics updates
+        socket.on('market-metrics', (metrics) => {
+            marketMetrics.textContent = `Total MCap: $${formatNumber(metrics.totalMarketCap)} | BTC Dom: ${metrics.btcDominance.toFixed(1)}% | 24h Vol: $${formatNumber(metrics.totalVolume24h)}`;
+        });
+
+        // Anomaly alerts
+        socket.on('anomalies', (anomalies) => {
+            anomalies.slice(0, 3).forEach(anomaly => {
+                addNewsItem(`${anomaly.message}`, anomaly.severity);
+            });
+        });
+
+        // Terminal functionality
+        terminalInput.addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter') {
+                const command = terminalInput.value.trim();
+                if (command) {
+                    terminalOutput.textContent += `${command}\n`;
+                    terminalInput.value = '';
+                    
+                    try {
+                        socket.emit('command', { command });
+                    } catch (error) {
+                        terminalOutput.textContent += `Error: ${error.message}\n> `;
+                    }
+                }
+            }
+        });
+
+        socket.on('command-result', (result) => {
+            terminalOutput.textContent += `${JSON.stringify(result, null, 2)}\n> `;
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        });
+
+        socket.on('command-error', (error) => {
+            terminalOutput.textContent += `Error: ${error.error}\n> `;
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        });
+
+        // Helper functions
+        function updateMarketTable(data) {
+            marketTbody.innerHTML = '';
+            data.forEach(coin => {
+                const row = document.createElement('tr');
+                const changeClass = coin.priceChange24h >= 0 ? 'positive' : 'negative';
+                
+                row.innerHTML = `
+                    <td>${coin.symbol}</td>
+                    <td>$${formatPrice(coin.price)}</td>
+                    <td class="${changeClass}">${coin.priceChange24h.toFixed(2)}%</td>
+                    <td>$${formatNumber(coin.volume24h)}</td>
+                    <td>$${formatNumber(coin.marketCap)}</td>
+                `;
+                
+                marketTbody.appendChild(row);
+            });
+            
+            marketTable.style.display = 'table';
+            marketTable.previousElementSibling.style.display = 'none';
+            
+            // Update heatmap
+            updateHeatmap(data);
+        }
+
+        function updateHeatmap(data) {
+            heatmapGrid.innerHTML = '';
+            data.forEach(coin => {
+                const cell = document.createElement('div');
+                cell.className = 'heatmap-cell';
+                
+                const change = coin.priceChange24h;
+                const intensity = Math.min(Math.abs(change) / 10, 1);
+                const color = change >= 0 
+                    ? `rgba(0, 255, 0, ${intensity})` 
+                    : `rgba(255, 0, 0, ${intensity})`;
+                
+                cell.style.backgroundColor = color;
+                cell.innerHTML = `${coin.symbol}<br/>${change.toFixed(1)}%`;
+                cell.title = `${coin.name}: $${formatPrice(coin.price)}`;
+                
+                heatmapGrid.appendChild(cell);
+            });
+        }
+
+        function addNewsItem(message, severity = 'info') {
+            const item = document.createElement('div');
+            item.style.padding = '10px';
+            item.style.color = severity === 'error' ? '#ff0000' : 
+                             severity === 'success' ? '#00ff00' : 
+                             severity === 'high' ? '#ff00ff' : '#ffff00';
+            
+            const time = new Date().toLocaleTimeString();
+            item.textContent = `• [${time}] ${message}`;
+            
+            newsContent.insertBefore(item, newsContent.firstChild);
+            
+            // Keep only last 10 items
+            while (newsContent.children.length > 10) {
+                newsContent.removeChild(newsContent.lastChild);
+            }
+        }
+
+        function formatNumber(num) {
+            if (num >= 1e12) return (num / 1e12).toFixed(2) + 'T';
+            if (num >= 1e9) return (num / 1e9).toFixed(2) + 'B';
+            if (num >= 1e6) return (num / 1e6).toFixed(2) + 'M';
+            if (num >= 1e3) return (num / 1e3).toFixed(2) + 'K';
+            return num.toFixed(2);
+        }
+
+        function formatPrice(price) {
+            if (price >= 1000) return price.toFixed(0);
+            if (price >= 1) return price.toFixed(2);
+            if (price >= 0.01) return price.toFixed(4);
+            return price.toFixed(6);
+        }
+
+        function updateLastTime() {
+            lastUpdate.textContent = `Last update: ${new Date().toLocaleTimeString()}`;
+        }
+
+        // Initial API health check
+        fetch('/health')
+            .then(response => response.json())
+            .then(data => {
+                apiStatus.style.backgroundColor = '#00ff00';
+                addNewsItem('API connection established', 'success');
+            })
+            .catch(error => {
+                apiStatus.style.backgroundColor = '#ff0000';
+                addNewsItem('API connection failed', 'error');
+            });
+
+        // Initial load
+        fetch('/api/market/data')
+            .then(response => response.json())
+            .then(data => updateMarketTable(data.slice(0, 10)))
+            .catch(error => console.error('Failed to load initial data:', error));
+    </script>
+</body>
+</html>
