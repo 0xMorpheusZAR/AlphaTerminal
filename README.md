@@ -262,6 +262,16 @@ cp .mcp.json.example .mcp.json
 
 For more information about MCP, visit: https://modelcontextprotocol.io/
 
+### SuperClaude Framework Integration
+This project includes the SuperClaude v3 framework for enhanced development workflows:
+
+- **16 Specialized Commands**: Development, analysis, and quality commands
+- **Smart Personas**: AI specialists for different domains
+- **Task Management**: Integrated progress tracking
+- **MCP Server Support**: Extended tooling capabilities
+
+See [CLAUDE.md](./CLAUDE.md) for detailed SuperClaude usage instructions.
+
 ## 📊 Performance
 
 - **Page Load**: < 2 seconds
