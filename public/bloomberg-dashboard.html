@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuperClaude AlphaTerminal - Bloomberg Style Dashboard</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 20px;
+            border-bottom: 2px solid #00ff88;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .status {
+            display: flex;
+            gap: 20px;
+            font-size: 12px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00ff88;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            grid-template-rows: auto 1fr;
+            gap: 10px;
+            padding: 10px;
+            height: calc(100vh - 60px);
+        }
+
+        .ticker {
+            grid-column: 1 / -1;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+        .ticker-scroll {
+            display: flex;
+            animation: scroll 30s linear infinite;
+            gap: 30px;
+        }
+
+        @keyframes scroll {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+
+        .ticker-item {
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 150px;
+        }
+
+        .ticker-symbol {
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .ticker-price {
+            color: #ffffff;
+        }
+
+        .ticker-change {
+            font-size: 12px;
+        }
+
+        .positive { color: #00ff88; }
+        .negative { color: #ff4757; }
+
+        .market-data {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .panel {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .panel-title {
+            color: #00ff88;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .coin-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .coin-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .coin-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .coin-rank {
+            background: #333;
+            color: #fff;
+            border-radius: 12px;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+
+        .coin-symbol {
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .coin-name {
+            color: #888;
+            font-size: 12px;
+        }
+
+        .coin-price {
+            text-align: right;
+        }
+
+        .persona-panel {
+            background: rgba(16, 62, 126, 0.3);
+            border: 1px solid #00ff88;
+        }
+
+        .persona-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .persona-tag {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            border: 1px solid #00ff88;
+        }
+
+        .persona-tag.active {
+            background: rgba(0, 255, 136, 0.8);
+            color: #000;
+            animation: glow 1s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { box-shadow: 0 0 5px #00ff88; }
+            to { box-shadow: 0 0 20px #00ff88; }
+        }
+
+        .loading {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid #333;
+            border-top: 2px solid #00ff88;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">SuperClaude AlphaTerminal</div>
+        <div class="status">
+            <div class="status-item">
+                <div class="status-dot"></div>
+                <span>CoinGecko MCP</span>
+            </div>
+            <div class="status-item">
+                <div class="status-dot"></div>
+                <span>WebSocket</span>
+            </div>
+            <div class="status-item">
+                <div class="status-dot"></div>
+                <span>Real-time</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-grid">
+        <div class="ticker">
+            <div class="ticker-scroll" id="ticker">
+                <div class="loading"></div>
+            </div>
+        </div>
+
+        <div class="market-data">
+            <div class="panel-title">Market Overview</div>
+            <div class="coin-list" id="coinList">
+                <div class="loading"></div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="panel">
+                <div class="panel-title">Global Stats</div>
+                <div class="stat-grid" id="globalStats">
+                    <div class="stat-item">
+                        <div class="stat-value">$1.75T</div>
+                        <div class="stat-label">Market Cap</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">$85B</div>
+                        <div class="stat-label">24h Volume</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">48.5%</div>
+                        <div class="stat-label">BTC Dominance</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">10,547</div>
+                        <div class="stat-label">Active Coins</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel persona-panel">
+                <div class="panel-title">🤖 Active Personas</div>
+                <div class="persona-list" id="personaList">
+                    <div class="persona-tag">Architect</div>
+                    <div class="persona-tag">Backend</div>
+                    <div class="persona-tag">Analyzer</div>
+                    <div class="persona-tag">Performance</div>
+                </div>
+                <div style="margin-top: 10px; font-size: 12px; color: #888;" id="personaStatus">
+                    Systematic persona orchestration active
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">Market Alerts</div>
+                <div style="font-size: 12px; color: #888;">
+                    <div>• BTC volume spike detected</div>
+                    <div>• ETH breaking resistance</div>
+                    <div>• SOL showing strong momentum</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let activePersonas = new Set();
+
+        // Initialize dashboard
+        socket.emit('dashboard:subscribe', { realtime: true });
+
+        // Handle market data updates
+        socket.on('market:initial', (data) => {
+            updateTicker(data.tickers || []);
+            updateCoinList(data.assets || []);
+            updateGlobalStats(data.stats || {});
+        });
+
+        socket.on('market:update', (data) => {
+            updateTicker(data.tickers || []);
+            updateCoinList(data.assets || []);
+        });
+
+        // Handle persona updates
+        socket.on('persona:update', (data) => {
+            if (data.persona) {
+                activePersonas.add(data.persona);
+                updatePersonaDisplay();
+                
+                // Show activity
+                const statusEl = document.getElementById('personaStatus');
+                statusEl.textContent = `${data.persona} working on: ${data.task || 'analysis'}`;
+                
+                // Remove after 3 seconds
+                setTimeout(() => {
+                    activePersonas.delete(data.persona);
+                    updatePersonaDisplay();
+                }, 3000);
+            }
+        });
+
+        function updateTicker(tickers) {
+            const tickerEl = document.getElementById('ticker');
+            if (tickers.length === 0) return;
+
+            tickerEl.innerHTML = tickers.map(ticker => `
+                <div class="ticker-item">
+                    <span class="ticker-symbol">${ticker.symbol}</span>
+                    <span class="ticker-price">$${ticker.price?.toFixed(2) || '0.00'}</span>
+                    <span class="ticker-change ${ticker.isUp ? 'positive' : 'negative'}">
+                        ${ticker.change24h > 0 ? '+' : ''}${ticker.change24h?.toFixed(2) || '0.00'}%
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        function updateCoinList(assets) {
+            const listEl = document.getElementById('coinList');
+            if (assets.length === 0) return;
+
+            listEl.innerHTML = assets.slice(0, 10).map(coin => `
+                <div class="coin-item">
+                    <div class="coin-info">
+                        <div class="coin-rank">${coin.market_cap_rank || '?'}</div>
+                        <div>
+                            <div class="coin-symbol">${coin.symbol?.toUpperCase() || 'UNK'}</div>
+                            <div class="coin-name">${coin.name || 'Unknown'}</div>
+                        </div>
+                    </div>
+                    <div class="coin-price">
+                        <div>$${coin.current_price?.toFixed(2) || '0.00'}</div>
+                        <div class="ticker-change ${(coin.price_change_percentage_24h || 0) >= 0 ? 'positive' : 'negative'}">
+                            ${(coin.price_change_percentage_24h || 0) >= 0 ? '+' : ''}${(coin.price_change_percentage_24h || 0).toFixed(2)}%
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateGlobalStats(stats) {
+            if (!stats || Object.keys(stats).length === 0) return;
+            
+            const statsEl = document.getElementById('globalStats');
+            statsEl.innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-value">${formatNumber(stats.totalMarketCap || 1750000000000)}</div>
+                    <div class="stat-label">Market Cap</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${formatNumber(stats.totalVolume || 85000000000)}</div>
+                    <div class="stat-label">24h Volume</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${(stats.btcDominance || 48.5).toFixed(1)}%</div>
+                    <div class="stat-label">BTC Dominance</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${stats.activeMarkets || 10547}</div>
+                    <div class="stat-label">Active Markets</div>
+                </div>
+            `;
+        }
+
+        function updatePersonaDisplay() {
+            const listEl = document.getElementById('personaList');
+            const allPersonas = ['architect', 'frontend', 'backend', 'security', 'performance', 'analyzer', 'qa', 'devops'];
+            
+            listEl.innerHTML = allPersonas.map(persona => `
+                <div class="persona-tag ${activePersonas.has(persona) ? 'active' : ''}">
+                    ${persona.charAt(0).toUpperCase() + persona.slice(1)}
+                </div>
+            `).join('');
+        }
+
+        function formatNumber(num) {
+            if (num >= 1e12) return '$' + (num / 1e12).toFixed(2) + 'T';
+            if (num >= 1e9) return '$' + (num / 1e9).toFixed(2) + 'B';
+            if (num >= 1e6) return '$' + (num / 1e6).toFixed(2) + 'M';
+            return '$' + num.toFixed(2);
+        }
+
+        // Initialize with mock data if no real data comes in
+        setTimeout(() => {
+            socket.emit('dashboard:subscribe');
+        }, 1000);
+    </script>
+</body>
+</html>
