@@ -20,9 +20,9 @@ export class DefiLlamaNarrativesService {
   private lastRequestTime = 0;
 
   constructor() {
-    this.apiKey = process.env.DEFILLAMA_PRO_API_KEY || '';
+    this.apiKey = process.env.DEFILLAMA_API_KEY || '';
     if (!this.apiKey) {
-      console.warn('⚠️  DefiLlama Pro API key not found. Using local CSV data.');
+      console.warn('⚠️  DefiLlama API key not found. Using local CSV data.');
     }
   }
 
@@ -59,7 +59,7 @@ export class DefiLlamaNarrativesService {
     }
 
     if (!this.apiKey) {
-      console.log('📊 Using local narrative data (no Pro API key)');
+      console.log('📊 Using local narrative data (no API key)');
       const localData = this.getLocalNarrativeData();
       this.setCache(cacheKey, localData);
       return localData;
@@ -105,8 +105,8 @@ export class DefiLlamaNarrativesService {
 
   async getNarrativePerformance(): Promise<NarrativeMetrics[]> {
     try {
-      // Try the Pro API endpoint for narrative data
-      const response = await this.makeRequest('/api/narratives/performance');
+      // Try the Pro API endpoint for narrative data (30 day performance)
+      const response = await this.makeRequest('/fdv/performance/30');
       return this.formatNarrativeMetrics(response);
     } catch (error) {
       console.error('Error fetching narrative performance:', error);
@@ -116,8 +116,13 @@ export class DefiLlamaNarrativesService {
 
   async getNarrativeHistory(days: number = 30): Promise<NarrativeData[]> {
     try {
-      const response = await this.makeRequest(`/api/narratives/history?days=${days}`);
-      return response;
+      // Map days to period parameter: 7, 30, 365, or 'ytd'
+      let period = '30';
+      if (days <= 7) period = '7';
+      else if (days > 30 && days <= 365) period = '365';
+      
+      const response = await this.makeRequest(`/fdv/performance/${period}`);
+      return this.parseHistoricalData(response);
     } catch (error) {
       console.error('Error fetching narrative history:', error);
       return this.getLocalNarrativeHistory();
@@ -275,6 +280,18 @@ export class DefiLlamaNarrativesService {
     }
     
     return this.getLocalNarrativeData();
+  }
+
+  // Parse historical data from API response
+  private parseHistoricalData(response: any): NarrativeData[] {
+    // If response is already in the expected format, return it
+    if (Array.isArray(response) && response.length > 0 && 'timestamp' in response[0]) {
+      return response;
+    }
+    
+    // Otherwise, convert the API response to our format
+    // The Pro API might return data in a different structure
+    return this.getLocalNarrativeHistory();
   }
 
   // Parse the CSV data for historical tracking

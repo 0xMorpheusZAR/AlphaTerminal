@@ -32,9 +32,10 @@ After extensive analysis of the DefiLlama documentation and testing of API endpo
 ### 🔐 Pro API Status
 
 - Base URL: `https://pro-api.llama.fi`
-- Authentication: Bearer token required
-- Current Status: Not configured in the application
-- Required Environment Variable: `DEFILLAMA_PRO_API_KEY`
+- Authentication: Bearer token required  
+- Current Status: **Configured with `DEFILLAMA_API_KEY`**
+- API Key Status: ✅ Active and authenticated
+- Endpoint Compatibility: ❌ OpenAPI spec endpoints return "invalid path" errors
 
 ### Pro API Endpoints (from OpenAPI spec)
 
@@ -54,10 +55,11 @@ After extensive analysis of the DefiLlama documentation and testing of API endpo
 - Updated to handle deprecated endpoints gracefully
 
 ### 2. DefiLlama Narratives Service (`server/services/defillama-narratives.ts`)
-- Configured for Pro API but falls back to local CSV data
-- Implements narrative performance tracking
+- Configured for Pro API with `DEFILLAMA_API_KEY`
+- Attempts to fetch from Pro API endpoints
+- Falls back to local CSV data when Pro API returns errors
 - Has caching and rate limiting built-in
-- Currently using mock data due to missing Pro API key
+- **Pro API Issue**: Documented endpoints return "invalid path" errors
 
 ## API Health Check Implementation
 
@@ -85,12 +87,21 @@ Returns current API configuration status:
 ### `/api/health/defillama`
 Runs comprehensive endpoint tests and returns detailed status report.
 
+## Key Findings - Pro API Mismatch
+
+During testing with the `DEFILLAMA_API_KEY`:
+- Authentication works correctly (Bearer token accepted)
+- All documented Pro API endpoints return: `"Path needs to start with known section, like /yields/..."`
+- This suggests the actual Pro API uses different endpoint paths than the OpenAPI documentation
+- The application handles this gracefully with local data fallback
+
 ## Recommendations
 
 1. **Continue Using Free API**: The free endpoints provide sufficient data for protocol analysis
-2. **Pro API Integration**: If narrative tracking is critical, obtain a Pro API key
+2. **Pro API Status**: The API key is configured but endpoints don't match documentation
 3. **Fallback Strategy**: Current implementation correctly falls back to local data when API fails
-4. **Monitoring**: Use the new health check endpoints to monitor API availability
+4. **Monitoring**: Use the health check endpoints to monitor API availability
+5. **Contact Support**: Consider reaching out to DefiLlama support for correct Pro API documentation
 
 ## Integration Points
 
