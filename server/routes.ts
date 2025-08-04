@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { coinGeckoService } from "./services/coingecko";
-import { veloService } from "./services/velo";
+import { veloService, VeloNewsItem } from "./services/velo";
 import { duneService } from "./services/dune";
 import { defiLlamaService } from "./services/defillama";
 import { defiLlamaNarrativesService } from "./services/defillama-narratives";
@@ -192,8 +192,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       for (const newsItem of veloNews) {
         const formattedNews = {
-          headline: newsItem.headline,
-          summary: newsItem.summary,
+          title: newsItem.headline,
+          content: newsItem.summary,
           source: newsItem.source,
           sourceUrl: newsItem.url,
           priority: 'normal' as any,
