@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlphaTerminal Pro | Bloomberg Terminal</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Bloomberg Professional Theme */
+        :root {
+            --bb-black: #000000;
+            --bb-darker: #050505;
+            --bb-dark: #0a0a0a;
+            --bb-orange: #ff6b00;
+            --bb-amber: #ffb000;
+            --bb-yellow: #ffd700;
+            --bb-green: #00ff00;
+            --bb-red: #ff0000;
+            --bb-blue: #0080ff;
+            --bb-gray: #808080;
+            --bb-light-gray: #c0c0c0;
+            --bb-border: #1a1a1a;
+            --bb-panel: #080808;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
+            background: var(--bb-black);
+            color: var(--bb-light-gray);
+            overflow: hidden;
+            font-size: 11px;
+            line-height: 1.2;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Loading Screen */
+        #loading-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--bb-black);
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.8s ease-out;
+        }
+
+        .matrix-rain {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            opacity: 0.1;
+        }
+
+        .matrix-column {
+            position: absolute;
+            top: -100%;
+            font-family: monospace;
+            font-size: 14px;
+            color: var(--bb-green);
+            animation: matrix-fall linear infinite;
+            text-shadow: 0 0 5px currentColor;
+        }
+
+        @keyframes matrix-fall {
+            to { transform: translateY(200vh); }
+        }
+
+        .loading-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+        }
+
+        .terminal-logo {
+            font-size: 48px;
+            font-weight: 700;
+            letter-spacing: -2px;
+            color: var(--bb-orange);
+            text-shadow: 0 0 30px var(--bb-orange), 0 0 60px var(--bb-orange);
+            margin-bottom: 40px;
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        .loading-bar {
+            width: 300px;
+            height: 2px;
+            background: var(--bb-border);
+            margin: 20px 0;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .loading-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--bb-orange), var(--bb-amber));
+            width: 0%;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px var(--bb-orange);
+        }
+
+        .loading-status {
+            color: var(--bb-gray);
+            font-size: 12px;
+            margin-top: 20px;
+            min-height: 20px;
+        }
+
+        .system-check {
+            margin-top: 40px;
+            text-align: left;
+            width: 400px;
+        }
+
+        .check-item {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            color: var(--bb-gray);
+            font-size: 11px;
+            opacity: 0;
+            animation: fade-in 0.3s ease forwards;
+        }
+
+        @keyframes fade-in {
+            to { opacity: 1; }
+        }
+
+        .check-icon {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Main Terminal */
+        #terminal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease-in;
+        }
+
+        .terminal-header {
+            height: 32px;
+            background: var(--bb-darker);
+            border-bottom: 1px solid var(--bb-border);
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            user-select: none;
+        }
+
+        .terminal-title {
+            color: var(--bb-orange);
+            font-weight: 600;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .terminal-time {
+            margin-left: auto;
+            color: var(--bb-amber);
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .terminal-body {
+            display: flex;
+            height: calc(100vh - 32px);
+        }
+
+        /* Command Bar */
+        .command-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 40px;
+            background: var(--bb-darker);
+            border-top: 1px solid var(--bb-border);
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            z-index: 1000;
+        }
+
+        .command-prompt {
+            color: var(--bb-orange);
+            margin-right: 8px;
+            font-weight: 600;
+        }
+
+        .command-input {
+            flex: 1;
+            background: none;
+            border: none;
+            color: var(--bb-amber);
+            font-family: inherit;
+            font-size: 12px;
+            outline: none;
+        }
+
+        .command-help {
+            color: var(--bb-gray);
+            font-size: 10px;
+            margin-left: 16px;
+        }
+
+        /* Panel System */
+        .panel-container {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            grid-template-rows: repeat(12, 1fr);
+            gap: 1px;
+            background: var(--bb-border);
+            padding: 1px;
+            margin-bottom: 40px;
+        }
+
+        .panel {
+            background: var(--bb-panel);
+            border: 1px solid var(--bb-border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            min-height: 0;
+            transition: all 0.3s ease;
+        }
+
+        .panel-header {
+            height: 24px;
+            background: var(--bb-dark);
+            border-bottom: 1px solid var(--bb-border);
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            cursor: move;
+            user-select: none;
+        }
+
+        .panel-title {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--bb-amber);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .panel-controls {
+            margin-left: auto;
+            display: flex;
+            gap: 4px;
+        }
+
+        .panel-btn {
+            width: 16px;
+            height: 16px;
+            background: none;
+            border: 1px solid var(--bb-border);
+            color: var(--bb-gray);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            transition: all 0.2s;
+        }
+
+        .panel-btn:hover {
+            color: var(--bb-amber);
+            border-color: var(--bb-amber);
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow: auto;
+            padding: 8px;
+            min-height: 0;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bb-darker);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--bb-border);
+            border-radius: 0;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--bb-gray);
+        }
+
+        /* Market Grid */
+        .market-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1px;
+            background: var(--bb-border);
+            font-size: 10px;
+        }
+
+        .market-cell {
+            background: var(--bb-darker);
+            padding: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .market-cell:hover {
+            background: var(--bb-dark);
+            box-shadow: inset 0 0 0 1px var(--bb-amber);
+        }
+
+        .market-symbol {
+            font-weight: 600;
+            color: var(--bb-amber);
+            margin-bottom: 2px;
+        }
+
+        .market-price {
+            color: white;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .market-change {
+            font-size: 10px;
+            margin-top: 2px;
+        }
+
+        .positive { color: var(--bb-green); }
+        .negative { color: var(--bb-red); }
+
+        /* Data Tables */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10px;
+        }
+
+        .data-table th {
+            text-align: left;
+            padding: 4px;
+            color: var(--bb-amber);
+            border-bottom: 1px solid var(--bb-border);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 9px;
+            letter-spacing: 0.5px;
+            position: sticky;
+            top: 0;
+            background: var(--bb-panel);
+        }
+
+        .data-table td {
+            padding: 4px;
+            border-bottom: 1px solid rgba(26, 26, 26, 0.5);
+        }
+
+        .data-table tr:hover {
+            background: rgba(255, 176, 0, 0.05);
+        }
+
+        /* Heatmap */
+        .heatmap-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+            gap: 1px;
+            background: var(--bb-border);
+        }
+
+        .heatmap-cell {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 9px;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .heatmap-cell:hover {
+            transform: scale(1.05);
+            z-index: 10;
+            box-shadow: 0 0 20px rgba(255, 176, 0, 0.5);
+        }
+
+        /* News Feed */
+        .news-item {
+            padding: 8px;
+            border-bottom: 1px solid var(--bb-border);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .news-item:hover {
+            background: rgba(255, 176, 0, 0.05);
+        }
+
+        .news-time {
+            color: var(--bb-gray);
+            font-size: 9px;
+            margin-bottom: 2px;
+        }
+
+        .news-title {
+            color: var(--bb-light-gray);
+            font-size: 11px;
+            margin-bottom: 2px;
+        }
+
+        .news-source {
+            color: var(--bb-amber);
+            font-size: 9px;
+            text-transform: uppercase;
+        }
+
+        /* Analytics */
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(26, 26, 26, 0.5);
+        }
+
+        .metric-label {
+            color: var(--bb-gray);
+            font-size: 10px;
+        }
+
+        .metric-value {
+            color: var(--bb-light-gray);
+            font-weight: 500;
+        }
+
+        /* Sparkline */
+        .sparkline {
+            height: 20px;
+            width: 100%;
+            margin: 4px 0;
+        }
+
+        /* Live indicator */
+        .live-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 6px;
+            background: rgba(0, 255, 0, 0.1);
+            border: 1px solid var(--bb-green);
+            border-radius: 2px;
+            font-size: 9px;
+            color: var(--bb-green);
+        }
+
+        .live-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--bb-green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Tooltips */
+        .tooltip {
+            position: absolute;
+            background: var(--bb-darker);
+            border: 1px solid var(--bb-amber);
+            padding: 4px 8px;
+            font-size: 10px;
+            color: var(--bb-light-gray);
+            pointer-events: none;
+            z-index: 9999;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .tooltip.show {
+            opacity: 1;
+        }
+
+        /* Scan lines effect */
+        .scan-lines {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(
+                transparent 50%,
+                rgba(255, 255, 255, 0.01) 50%
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            animation: scan 8s linear infinite;
+            opacity: 0.5;
+        }
+
+        @keyframes scan {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(4px); }
+        }
+
+        /* Panel layouts */
+        .panel-ticker { grid-column: span 12; grid-row: span 1; }
+        .panel-market { grid-column: span 4; grid-row: span 5; }
+        .panel-chart { grid-column: span 5; grid-row: span 7; }
+        .panel-orderbook { grid-column: span 3; grid-row: span 7; }
+        .panel-trades { grid-column: span 3; grid-row: span 4; }
+        .panel-news { grid-column: span 3; grid-row: span 4; }
+        .panel-portfolio { grid-column: span 3; grid-row: span 4; }
+        .panel-heatmap { grid-column: span 4; grid-row: span 4; }
+        .panel-analytics { grid-column: span 2; grid-row: span 4; }
+    </style>
+</head>
+<body>
+    <!-- Matrix Rain Effect -->
+    <div class="matrix-rain" id="matrix-rain"></div>
+    
+    <!-- Scan Lines Effect -->
+    <div class="scan-lines"></div>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loading-content">
+            <div class="terminal-logo">ALPHATERMINAL</div>
+            <div class="loading-bar">
+                <div class="loading-bar-fill" id="loading-progress"></div>
+            </div>
+            <div class="loading-status" id="loading-status">INITIALIZING SYSTEM...</div>
+            
+            <div class="system-check" id="system-check">
+                <!-- System check items will be added dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Terminal -->
+    <div id="terminal">
+        <div class="terminal-header">
+            <div class="terminal-title">ALPHATERMINAL PRO - BLOOMBERG MODE</div>
+            <div class="terminal-time" id="terminal-time"></div>
+        </div>
+        
+        <div class="terminal-body">
+            <div class="panel-container" id="panel-container">
+                <!-- Panels will be dynamically generated -->
+            </div>
+        </div>
+
+        <!-- Command Bar -->
+        <div class="command-bar">
+            <span class="command-prompt">&gt;</span>
+            <input type="text" class="command-input" id="command-input" placeholder="Enter command..." autocomplete="off">
+            <span class="command-help">Press F1 for help | Ctrl+K for commands</span>
+        </div>
+    </div>
+
+    <!-- Tooltip -->
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        // Bloomberg Terminal V2 Implementation
+        class BloombergTerminal {
+            constructor() {
+                this.panels = new Map();
+                this.marketData = new Map();
+                this.commands = new Map();
+                this.isLoading = true;
+                this.commandHistory = [];
+                this.historyIndex = -1;
+                
+                this.init();
+            }
+
+            async init() {
+                this.setupMatrixRain();
+                await this.performSystemCheck();
+                await this.loadMarketData();
+                this.setupTerminal();
+                this.startRealTimeUpdates();
+            }
+
+            setupMatrixRain() {
+                const container = document.getElementById('matrix-rain');
+                const columns = Math.floor(window.innerWidth / 20);
+                
+                for (let i = 0; i < columns; i++) {
+                    const column = document.createElement('div');
+                    column.className = 'matrix-column';
+                    column.style.left = `${i * 20}px`;
+                    column.style.animationDuration = `${Math.random() * 10 + 5}s`;
+                    column.style.animationDelay = `${Math.random() * 5}s`;
+                    
+                    // Generate random characters
+                    let text = '';
+                    for (let j = 0; j < 50; j++) {
+                        text += String.fromCharCode(Math.random() * 94 + 33);
+                    }
+                    column.textContent = text;
+                    
+                    container.appendChild(column);
+                }
+            }
+
+            async performSystemCheck() {
+                const checks = [
+                    { name: 'QUANTUM ENCRYPTION MODULE', delay: 300 },
+                    { name: 'MARKET DATA FEEDS', delay: 500 },
+                    { name: 'WEBSOCKET CONNECTIONS', delay: 400 },
+                    { name: 'NEURAL NETWORK ENGINE', delay: 600 },
+                    { name: 'RISK ANALYSIS SYSTEM', delay: 450 },
+                    { name: 'PORTFOLIO OPTIMIZER', delay: 350 },
+                    { name: 'NEWS SENTIMENT ANALYZER', delay: 550 },
+                    { name: 'BLOCKCHAIN INTERFACE', delay: 400 }
+                ];
+
+                const container = document.getElementById('system-check');
+                let progress = 0;
+
+                for (const check of checks) {
+                    await this.delay(check.delay);
+                    
+                    const item = document.createElement('div');
+                    item.className = 'check-item';
+                    item.style.animationDelay = '0s';
+                    item.innerHTML = `
+                        <div class="check-icon">
+                            <svg width="16" height="16" viewBox="0 0 16 16">
+                                <path d="M13.5 2.5L6 10L2.5 6.5" stroke="#00ff00" stroke-width="2" fill="none"/>
+                            </svg>
+                        </div>
+                        <span>${check.name}</span>
+                        <span style="margin-left: auto; color: #00ff00;">OK</span>
+                    `;
+                    container.appendChild(item);
+                    
+                    progress += 12.5;
+                    this.updateLoadingProgress(progress);
+                    this.updateLoadingStatus(check.name);
+                }
+
+                await this.delay(800);
+                this.updateLoadingStatus('SYSTEM READY. ENTERING TERMINAL...');
+                await this.delay(1000);
+            }
+
+            updateLoadingProgress(percent) {
+                document.getElementById('loading-progress').style.width = `${percent}%`;
+            }
+
+            updateLoadingStatus(text) {
+                document.getElementById('loading-status').textContent = text;
+            }
+
+            async loadMarketData() {
+                // Simulated market data - replace with real API calls
+                const symbols = ['BTC', 'ETH', 'BNB', 'XRP', 'SOL', 'ADA', 'AVAX', 'DOT', 'MATIC', 'LINK'];
+                
+                symbols.forEach(symbol => {
+                    const basePrice = Math.random() * 50000 + 1000;
+                    this.marketData.set(symbol, {
+                        symbol,
+                        price: basePrice,
+                        change24h: (Math.random() - 0.5) * 10,
+                        volume: Math.random() * 1000000000,
+                        high24h: basePrice * 1.05,
+                        low24h: basePrice * 0.95,
+                        marketCap: basePrice * Math.random() * 1000000000
+                    });
+                });
+            }
+
+            setupTerminal() {
+                // Hide loading screen
+                const loadingScreen = document.getElementById('loading-screen');
+                const terminal = document.getElementById('terminal');
+                
+                loadingScreen.style.opacity = '0';
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                    terminal.style.display = 'block';
+                    setTimeout(() => {
+                        terminal.style.opacity = '1';
+                    }, 50);
+                }, 800);
+
+                // Setup panels
+                this.createPanels();
+                this.setupCommandBar();
+                this.setupKeyboardShortcuts();
+                this.updateTime();
+            }
+
+            createPanels() {
+                const container = document.getElementById('panel-container');
+                
+                // Define panel configurations
+                const panelConfigs = [
+                    { id: 'ticker', title: 'MARKET TICKER', class: 'panel-ticker', content: this.createTickerContent() },
+                    { id: 'market', title: 'MARKET OVERVIEW', class: 'panel-market', content: this.createMarketContent() },
+                    { id: 'chart', title: 'PRICE CHART - BTC/USD', class: 'panel-chart', content: this.createChartContent() },
+                    { id: 'orderbook', title: 'ORDER BOOK', class: 'panel-orderbook', content: this.createOrderBookContent() },
+                    { id: 'trades', title: 'RECENT TRADES', class: 'panel-trades', content: this.createTradesContent() },
+                    { id: 'news', title: 'NEWS & ANALYSIS', class: 'panel-news', content: this.createNewsContent() },
+                    { id: 'portfolio', title: 'PORTFOLIO', class: 'panel-portfolio', content: this.createPortfolioContent() },
+                    { id: 'heatmap', title: 'MARKET HEATMAP', class: 'panel-heatmap', content: this.createHeatmapContent() },
+                    { id: 'analytics', title: 'ANALYTICS', class: 'panel-analytics', content: this.createAnalyticsContent() }
+                ];
+
+                panelConfigs.forEach(config => {
+                    const panel = this.createPanel(config);
+                    container.appendChild(panel);
+                    this.panels.set(config.id, panel);
+                });
+            }
+
+            createPanel({ id, title, class: className, content }) {
+                const panel = document.createElement('div');
+                panel.className = `panel ${className}`;
+                panel.dataset.panelId = id;
+                
+                panel.innerHTML = `
+                    <div class="panel-header">
+                        <span class="panel-title">${title}</span>
+                        <div class="panel-controls">
+                            <button class="panel-btn" data-action="refresh">↻</button>
+                            <button class="panel-btn" data-action="minimize">−</button>
+                            <button class="panel-btn" data-action="maximize">□</button>
+                            <button class="panel-btn" data-action="close">×</button>
+                        </div>
+                    </div>
+                    <div class="panel-content">
+                        ${content}
+                    </div>
+                `;
+
+                // Setup panel controls
+                panel.querySelectorAll('.panel-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const action = e.target.dataset.action;
+                        this.handlePanelAction(panel, action);
+                    });
+                });
+
+                return panel;
+            }
+
+            createTickerContent() {
+                const items = Array.from(this.marketData.values()).map(data => `
+                    <div class="ticker-item" style="display: inline-block; margin-right: 24px;">
+                        <span style="color: var(--bb-amber); font-weight: 600;">${data.symbol}</span>
+                        <span style="color: white; margin: 0 8px;">$${data.price.toFixed(2)}</span>
+                        <span class="${data.change24h >= 0 ? 'positive' : 'negative'}">
+                            ${data.change24h >= 0 ? '+' : ''}${data.change24h.toFixed(2)}%
+                        </span>
+                    </div>
+                `).join('');
+
+                return `
+                    <div style="overflow: hidden; white-space: nowrap;">
+                        <div style="display: inline-block; animation: scroll-ticker 30s linear infinite;">
+                            ${items}${items}
+                        </div>
+                    </div>
+                    <style>
+                        @keyframes scroll-ticker {
+                            0% { transform: translateX(0); }
+                            100% { transform: translateX(-50%); }
+                        }
+                    </style>
+                `;
+            }
+
+            createMarketContent() {
+                const marketHtml = Array.from(this.marketData.values()).map(data => `
+                    <div class="market-cell">
+                        <div class="market-symbol">${data.symbol}</div>
+                        <div class="market-price">$${data.price.toFixed(2)}</div>
+                        <div class="market-change ${data.change24h >= 0 ? 'positive' : 'negative'}">
+                            ${data.change24h >= 0 ? '+' : ''}${data.change24h.toFixed(2)}%
+                        </div>
+                    </div>
+                `).join('');
+
+                return `<div class="market-grid">${marketHtml}</div>`;
+            }
+
+            createChartContent() {
+                return `
+                    <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--bb-gray);">
+                        <div style="text-align: center;">
+                            <svg width="100" height="60" style="margin-bottom: 16px;">
+                                <polyline points="0,50 10,45 20,40 30,35 40,30 50,25 60,30 70,20 80,15 90,10 100,5" 
+                                         stroke="#ffb000" stroke-width="2" fill="none"/>
+                            </svg>
+                            <div>CHART MODULE LOADING...</div>
+                            <div style="margin-top: 8px; font-size: 10px;">
+                                <span class="live-indicator">
+                                    <span class="live-dot"></span>
+                                    LIVE DATA
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            createOrderBookContent() {
+                const asks = [];
+                const bids = [];
+                const basePrice = 65432.21;
+
+                for (let i = 0; i < 10; i++) {
+                    const askPrice = basePrice + (i + 1) * 10;
+                    const bidPrice = basePrice - (i + 1) * 10;
+                    
+                    asks.push({
+                        price: askPrice,
+                        size: (Math.random() * 10).toFixed(4),
+                        total: (Math.random() * 1000).toFixed(2)
+                    });
+                    
+                    bids.push({
+                        price: bidPrice,
+                        size: (Math.random() * 10).toFixed(4),
+                        total: (Math.random() * 1000).toFixed(2)
+                    });
+                }
+
+                const askRows = asks.reverse().map(ask => `
+                    <tr>
+                        <td style="color: var(--bb-red);">${ask.price.toFixed(2)}</td>
+                        <td>${ask.size}</td>
+                        <td>${ask.total}</td>
+                    </tr>
+                `).join('');
+
+                const bidRows = bids.map(bid => `
+                    <tr>
+                        <td style="color: var(--bb-green);">${bid.price.toFixed(2)}</td>
+                        <td>${bid.size}</td>
+                        <td>${bid.total}</td>
+                    </tr>
+                `).join('');
+
+                return `
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>PRICE</th>
+                                <th>SIZE</th>
+                                <th>TOTAL</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${askRows}
+                            <tr>
+                                <td colspan="3" style="text-align: center; padding: 8px; color: var(--bb-amber);">
+                                    SPREAD: $20.00 (0.03%)
+                                </td>
+                            </tr>
+                            ${bidRows}
+                        </tbody>
+                    </table>
+                `;
+            }
+
+            createTradesContent() {
+                const trades = [];
+                for (let i = 0; i < 20; i++) {
+                    trades.push({
+                        time: new Date(Date.now() - i * 60000).toLocaleTimeString(),
+                        price: (65432.21 + (Math.random() - 0.5) * 100).toFixed(2),
+                        size: (Math.random() * 5).toFixed(4),
+                        side: Math.random() > 0.5 ? 'BUY' : 'SELL'
+                    });
+                }
+
+                const rows = trades.map(trade => `
+                    <tr>
+                        <td style="color: var(--bb-gray); font-size: 9px;">${trade.time}</td>
+                        <td>${trade.price}</td>
+                        <td>${trade.size}</td>
+                        <td class="${trade.side === 'BUY' ? 'positive' : 'negative'}">${trade.side}</td>
+                    </tr>
+                `).join('');
+
+                return `
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>TIME</th>
+                                <th>PRICE</th>
+                                <th>SIZE</th>
+                                <th>SIDE</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                `;
+            }
+
+            createNewsContent() {
+                const news = [
+                    { time: '14:32', title: 'Bitcoin Surges Past $65K Resistance', source: 'BLOOMBERG', sentiment: 'positive' },
+                    { time: '14:28', title: 'Fed Chair Comments on Digital Assets', source: 'REUTERS', sentiment: 'neutral' },
+                    { time: '14:15', title: 'Ethereum Upgrade Scheduled for Q2', source: 'COINDESK', sentiment: 'positive' },
+                    { time: '13:45', title: 'Regulatory Concerns in Asian Markets', source: 'FT', sentiment: 'negative' },
+                    { time: '13:22', title: 'DeFi TVL Reaches New ATH', source: 'DEFIPULSE', sentiment: 'positive' }
+                ];
+
+                return news.map(item => `
+                    <div class="news-item">
+                        <div class="news-time">${item.time}</div>
+                        <div class="news-title">${item.title}</div>
+                        <div class="news-source">${item.source}</div>
+                    </div>
+                `).join('');
+            }
+
+            createPortfolioContent() {
+                const holdings = [
+                    { symbol: 'BTC', amount: 2.5, value: 163580.53, pnl: 12.5, allocation: 45 },
+                    { symbol: 'ETH', amount: 15, value: 51851.70, pnl: 8.3, allocation: 25 },
+                    { symbol: 'SOL', amount: 100, value: 14567.00, pnl: -3.2, allocation: 15 },
+                    { symbol: 'USDT', amount: 25000, value: 25000.00, pnl: 0, allocation: 15 }
+                ];
+
+                const totalValue = holdings.reduce((sum, h) => sum + h.value, 0);
+
+                const rows = holdings.map(h => `
+                    <tr>
+                        <td style="color: var(--bb-amber);">${h.symbol}</td>
+                        <td>${h.amount}</td>
+                        <td>$${h.value.toLocaleString()}</td>
+                        <td class="${h.pnl >= 0 ? 'positive' : 'negative'}">
+                            ${h.pnl >= 0 ? '+' : ''}${h.pnl}%
+                        </td>
+                        <td>${h.allocation}%</td>
+                    </tr>
+                `).join('');
+
+                return `
+                    <div class="metric-row" style="margin-bottom: 12px; padding: 8px; background: var(--bb-dark);">
+                        <span class="metric-label">TOTAL VALUE</span>
+                        <span class="metric-value" style="color: var(--bb-amber); font-size: 14px;">
+                            $${totalValue.toLocaleString()}
+                        </span>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ASSET</th>
+                                <th>AMOUNT</th>
+                                <th>VALUE</th>
+                                <th>P&L</th>
+                                <th>ALLOC</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                `;
+            }
+
+            createHeatmapContent() {
+                const sectors = [
+                    { name: 'BTC', value: 48.5, change: 2.3 },
+                    { name: 'ETH', value: 18.2, change: 3.1 },
+                    { name: 'BNB', value: 4.5, change: -1.2 },
+                    { name: 'XRP', value: 2.8, change: 5.4 },
+                    { name: 'SOL', value: 2.1, change: -3.2 },
+                    { name: 'ADA', value: 1.5, change: 1.8 },
+                    { name: 'AVAX', value: 1.2, change: 4.2 },
+                    { name: 'DOT', value: 0.9, change: -2.1 },
+                    { name: 'MATIC', value: 0.8, change: 6.3 },
+                    { name: 'OTHER', value: 19.5, change: 0.5 }
+                ];
+
+                const cells = sectors.map(s => {
+                    const color = s.change >= 0 ? 
+                        `rgba(0, 255, 0, ${Math.abs(s.change) / 10})` : 
+                        `rgba(255, 0, 0, ${Math.abs(s.change) / 10})`;
+                    
+                    return `
+                        <div class="heatmap-cell" style="background: ${color};">
+                            <div style="font-weight: 600;">${s.name}</div>
+                            <div style="font-size: 11px;">${s.value}%</div>
+                            <div class="${s.change >= 0 ? 'positive' : 'negative'}" style="font-size: 10px;">
+                                ${s.change >= 0 ? '+' : ''}${s.change}%
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                return `<div class="heatmap-container">${cells}</div>`;
+            }
+
+            createAnalyticsContent() {
+                const metrics = [
+                    { label: 'RSI (14)', value: '67.8', status: 'Overbought' },
+                    { label: 'MACD', value: '125.4', status: 'Bullish' },
+                    { label: 'Volume', value: '$98.7B', status: '+12.3%' },
+                    { label: 'Volatility', value: '3.2%', status: 'Low' },
+                    { label: 'Correlation', value: '0.82', status: 'High' },
+                    { label: 'Sentiment', value: '73', status: 'Greed' }
+                ];
+
+                const rows = metrics.map(m => `
+                    <div class="metric-row">
+                        <span class="metric-label">${m.label}</span>
+                        <div style="text-align: right;">
+                            <div class="metric-value">${m.value}</div>
+                            <div style="font-size: 9px; color: var(--bb-amber);">${m.status}</div>
+                        </div>
+                    </div>
+                `).join('');
+
+                return `
+                    <div>${rows}</div>
+                    <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--bb-border);">
+                        <div style="font-size: 10px; color: var(--bb-amber); margin-bottom: 8px;">SIGNAL</div>
+                        <div style="padding: 8px; background: rgba(0, 255, 0, 0.1); border: 1px solid var(--bb-green); text-align: center;">
+                            <span style="color: var(--bb-green); font-weight: 600;">STRONG BUY</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            setupCommandBar() {
+                const input = document.getElementById('command-input');
+                
+                // Command definitions
+                this.commands.set('HELP', () => this.showHelp());
+                this.commands.set('CLEAR', () => this.clearCommand());
+                this.commands.set('MARKET', () => this.showMarketOverview());
+                this.commands.set('NEWS', () => this.focusPanel('news'));
+                this.commands.set('PORTFOLIO', () => this.focusPanel('portfolio'));
+                this.commands.set('CHART', (symbol) => this.showChart(symbol));
+                this.commands.set('BUY', (symbol, amount) => this.executeTrade('BUY', symbol, amount));
+                this.commands.set('SELL', (symbol, amount) => this.executeTrade('SELL', symbol, amount));
+
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        const command = input.value.toUpperCase().trim();
+                        this.executeCommand(command);
+                        this.commandHistory.push(command);
+                        this.historyIndex = this.commandHistory.length;
+                        input.value = '';
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        if (this.historyIndex > 0) {
+                            this.historyIndex--;
+                            input.value = this.commandHistory[this.historyIndex];
+                        }
+                    } else if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        if (this.historyIndex < this.commandHistory.length - 1) {
+                            this.historyIndex++;
+                            input.value = this.commandHistory[this.historyIndex];
+                        } else {
+                            this.historyIndex = this.commandHistory.length;
+                            input.value = '';
+                        }
+                    }
+                });
+            }
+
+            executeCommand(command) {
+                const parts = command.split(' ');
+                const cmd = parts[0];
+                const args = parts.slice(1);
+
+                if (this.commands.has(cmd)) {
+                    this.commands.get(cmd)(...args);
+                } else if (cmd) {
+                    this.showNotification(`Unknown command: ${cmd}. Type HELP for available commands.`, 'error');
+                }
+            }
+
+            setupKeyboardShortcuts() {
+                document.addEventListener('keydown', (e) => {
+                    // F1 - Help
+                    if (e.key === 'F1') {
+                        e.preventDefault();
+                        this.showHelp();
+                    }
+                    // Ctrl+K - Focus command bar
+                    else if (e.ctrlKey && e.key === 'k') {
+                        e.preventDefault();
+                        document.getElementById('command-input').focus();
+                    }
+                    // Ctrl+1 to 9 - Switch panels
+                    else if (e.ctrlKey && e.key >= '1' && e.key <= '9') {
+                        e.preventDefault();
+                        const panelIndex = parseInt(e.key) - 1;
+                        const panelIds = Array.from(this.panels.keys());
+                        if (panelIndex < panelIds.length) {
+                            this.focusPanel(panelIds[panelIndex]);
+                        }
+                    }
+                });
+            }
+
+            handlePanelAction(panel, action) {
+                switch (action) {
+                    case 'refresh':
+                        this.refreshPanel(panel);
+                        break;
+                    case 'minimize':
+                        panel.style.display = 'none';
+                        break;
+                    case 'maximize':
+                        this.maximizePanel(panel);
+                        break;
+                    case 'close':
+                        panel.remove();
+                        this.panels.delete(panel.dataset.panelId);
+                        break;
+                }
+            }
+
+            refreshPanel(panel) {
+                const content = panel.querySelector('.panel-content');
+                const originalContent = content.innerHTML;
+                content.innerHTML = '<div style="text-align: center; padding: 20px;">Refreshing...</div>';
+                
+                setTimeout(() => {
+                    content.innerHTML = originalContent;
+                    this.showNotification('Panel refreshed', 'success');
+                }, 500);
+            }
+
+            maximizePanel(panel) {
+                if (panel.classList.contains('maximized')) {
+                    panel.classList.remove('maximized');
+                    panel.style.position = '';
+                    panel.style.inset = '';
+                    panel.style.zIndex = '';
+                } else {
+                    panel.classList.add('maximized');
+                    panel.style.position = 'fixed';
+                    panel.style.inset = '32px 0 40px 0';
+                    panel.style.zIndex = '1000';
+                }
+            }
+
+            focusPanel(panelId) {
+                const panel = this.panels.get(panelId);
+                if (panel) {
+                    panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    panel.style.boxShadow = '0 0 20px var(--bb-amber)';
+                    setTimeout(() => {
+                        panel.style.boxShadow = '';
+                    }, 2000);
+                }
+            }
+
+            showHelp() {
+                const helpText = `
+ALPHATERMINAL COMMAND REFERENCE
+================================
+HELP         - Show this help
+CLEAR        - Clear command history
+MARKET       - Show market overview
+NEWS         - Focus news panel
+PORTFOLIO    - Focus portfolio panel
+CHART [SYM]  - Show chart for symbol
+BUY [SYM] [AMT]  - Buy order
+SELL [SYM] [AMT] - Sell order
+
+KEYBOARD SHORTCUTS
+==================
+F1           - Show help
+Ctrl+K       - Focus command bar
+Ctrl+1-9     - Switch panels
+ESC          - Clear command
+                `;
+                
+                alert(helpText);
+            }
+
+            clearCommand() {
+                document.getElementById('command-input').value = '';
+                this.commandHistory = [];
+                this.historyIndex = -1;
+                this.showNotification('Command history cleared', 'info');
+            }
+
+            showMarketOverview() {
+                this.focusPanel('market');
+            }
+
+            showChart(symbol) {
+                if (symbol) {
+                    const chartPanel = this.panels.get('chart');
+                    if (chartPanel) {
+                        chartPanel.querySelector('.panel-title').textContent = `PRICE CHART - ${symbol}/USD`;
+                        this.focusPanel('chart');
+                    }
+                } else {
+                    this.showNotification('Usage: CHART [SYMBOL]', 'error');
+                }
+            }
+
+            executeTrade(side, symbol, amount) {
+                if (!symbol || !amount) {
+                    this.showNotification(`Usage: ${side} [SYMBOL] [AMOUNT]`, 'error');
+                    return;
+                }
+                
+                this.showNotification(`${side} order placed: ${amount} ${symbol}`, 'success');
+            }
+
+            showNotification(message, type = 'info') {
+                const colors = {
+                    info: 'var(--bb-blue)',
+                    success: 'var(--bb-green)',
+                    error: 'var(--bb-red)',
+                    warning: 'var(--bb-amber)'
+                };
+
+                const notification = document.createElement('div');
+                notification.style.cssText = `
+                    position: fixed;
+                    bottom: 60px;
+                    right: 20px;
+                    padding: 12px 20px;
+                    background: var(--bb-darker);
+                    border: 1px solid ${colors[type]};
+                    color: ${colors[type]};
+                    font-size: 12px;
+                    z-index: 9999;
+                    animation: slide-in 0.3s ease;
+                `;
+                notification.textContent = message;
+                
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.style.animation = 'slide-out 0.3s ease';
+                    setTimeout(() => notification.remove(), 300);
+                }, 3000);
+            }
+
+            updateTime() {
+                const updateClock = () => {
+                    const now = new Date();
+                    const time = now.toLocaleTimeString('en-US', { 
+                        hour12: false, 
+                        hour: '2-digit', 
+                        minute: '2-digit', 
+                        second: '2-digit' 
+                    });
+                    const date = now.toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric', 
+                        year: 'numeric' 
+                    });
+                    
+                    document.getElementById('terminal-time').textContent = `${date} ${time} EST`;
+                };
+
+                updateClock();
+                setInterval(updateClock, 1000);
+            }
+
+            startRealTimeUpdates() {
+                // Simulate real-time price updates
+                setInterval(() => {
+                    this.marketData.forEach((data, symbol) => {
+                        // Random price movement
+                        const change = (Math.random() - 0.5) * 0.002;
+                        data.price *= (1 + change);
+                        data.change24h += change * 100;
+                        
+                        // Update UI elements that show this data
+                        this.updateMarketData(symbol, data);
+                    });
+                }, 2000);
+            }
+
+            updateMarketData(symbol, data) {
+                // Update market cells
+                const cells = document.querySelectorAll('.market-cell');
+                cells.forEach(cell => {
+                    const cellSymbol = cell.querySelector('.market-symbol');
+                    if (cellSymbol && cellSymbol.textContent === symbol) {
+                        cell.querySelector('.market-price').textContent = `$${data.price.toFixed(2)}`;
+                        const changeEl = cell.querySelector('.market-change');
+                        changeEl.textContent = `${data.change24h >= 0 ? '+' : ''}${data.change24h.toFixed(2)}%`;
+                        changeEl.className = `market-change ${data.change24h >= 0 ? 'positive' : 'negative'}`;
+                    }
+                });
+            }
+
+            delay(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+        }
+
+        // Initialize terminal
+        window.addEventListener('DOMContentLoaded', () => {
+            new BloombergTerminal();
+        });
+
+        // Add notification animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slide-in {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slide-out {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

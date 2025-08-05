@@ -1,0 +1,39 @@
+{
+  "name": "@alphaterminal/bloomberg",
+  "version": "2.0.0",
+  "description": "Professional Bloomberg-style crypto analytics dashboard",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "build:packages": "turbo run build --filter=./packages/*",
+    "build:api": "turbo run build --filter=@alphaterminal/api",
+    "build:web": "turbo run build --filter=@alphaterminal/web",
+    "start": "turbo run start",
+    "start:api": "turbo run start --filter=@alphaterminal/api",
+    "start:web": "turbo run start --filter=@alphaterminal/web",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "prepare": "husky install",
+    "deploy": "node scripts/build-and-deploy.js",
+    "clean": "turbo run clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "eslint": "^8.54.0",
+    "husky": "^8.0.3",
+    "prettier": "^3.1.0",
+    "turbo": "^1.11.1",
+    "typescript": "^5.3.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "packageManager": "npm@9.8.1"
+}

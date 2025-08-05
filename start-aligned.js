@@ -166,6 +166,11 @@ io.on('connection', (socket) => {
     });
 });
 
+// Serve Bloomberg V2 terminal
+app.get('/bloomberg', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'bloomberg-v2.html'));
+});
+
 // Serve React app - use specific route to avoid path-to-regexp issue
 app.use((req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));

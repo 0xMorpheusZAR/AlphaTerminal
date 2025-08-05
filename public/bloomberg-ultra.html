@@ -1,0 +1,1520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlphaTerminal Bloomberg Ultra | Professional Crypto Analytics</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Ultra Professional Theme with Advanced Effects */
+        :root {
+            --ultra-black: #000000;
+            --ultra-dark: #050505;
+            --ultra-panel: #0a0a0a;
+            --ultra-border: #1a1a1a;
+            --ultra-gold: #FFD700;
+            --ultra-amber: #FFA500;
+            --ultra-orange: #FF6B00;
+            --ultra-green: #00FF41;
+            --ultra-neon-green: #39FF14;
+            --ultra-red: #FF0737;
+            --ultra-neon-red: #FF073A;
+            --ultra-blue: #00D4FF;
+            --ultra-purple: #B026FF;
+            --ultra-white: #FFFFFF;
+            --ultra-gray: #808080;
+            --ultra-light-gray: #C0C0C0;
+            
+            /* Glow Effects */
+            --glow-green: 0 0 10px rgba(0,255,65,0.5), 0 0 20px rgba(0,255,65,0.3);
+            --glow-red: 0 0 10px rgba(255,7,58,0.5), 0 0 20px rgba(255,7,58,0.3);
+            --glow-amber: 0 0 10px rgba(255,165,0,0.5), 0 0 20px rgba(255,165,0,0.3);
+            --glow-blue: 0 0 10px rgba(0,212,255,0.5), 0 0 20px rgba(0,212,255,0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', 'Monaco', 'Consolas', monospace;
+            background: var(--ultra-black);
+            color: var(--ultra-light-gray);
+            overflow: hidden;
+            font-size: 12px;
+            line-height: 1.4;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            position: relative;
+        }
+
+        /* Matrix Rain Background Effect */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: 
+                radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.8) 100%),
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0,255,65,0.03) 2px,
+                    rgba(0,255,65,0.03) 4px
+                );
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Enhanced Loading Screen */
+        #loading-screen {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse at center, #000 0%, #000 50%, #000 100%);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 1s ease-out;
+        }
+
+        .loading-content {
+            text-align: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        .alpha-logo {
+            margin-bottom: 50px;
+            animation: pulse-glow 2s ease-in-out infinite;
+            position: relative;
+        }
+
+        .logo-text {
+            font-size: 72px;
+            font-weight: 800;
+            letter-spacing: 12px;
+            background: linear-gradient(45deg, #00ff41, #39ff14, #00ff41);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: var(--glow-green);
+            animation: gradient-shift 3s ease infinite;
+        }
+
+        .logo-subtext {
+            font-size: 24px;
+            font-weight: 300;
+            letter-spacing: 18px;
+            color: var(--ultra-green);
+            margin-top: -10px;
+            opacity: 0.9;
+            text-shadow: var(--glow-green);
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { 
+                filter: brightness(1) drop-shadow(0 0 20px rgba(0,255,65,0.5));
+            }
+            50% { 
+                filter: brightness(1.2) drop-shadow(0 0 40px rgba(0,255,65,0.8));
+            }
+        }
+
+        @keyframes gradient-shift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 3px solid rgba(0,255,65,0.1);
+            border-top: 3px solid var(--ultra-green);
+            border-right: 3px solid var(--ultra-neon-green);
+            border-radius: 50%;
+            animation: quantum-spin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+            margin: 0 auto 40px;
+            box-shadow: var(--glow-green);
+        }
+
+        @keyframes quantum-spin {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(0.8); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+
+        .loading-status {
+            font-size: 16px;
+            color: var(--ultra-green);
+            opacity: 0.9;
+            min-height: 24px;
+            transition: all 0.3s ease;
+            text-shadow: var(--glow-green);
+            letter-spacing: 1px;
+        }
+
+        /* Main Terminal with Glass Morphism */
+        #terminal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            opacity: 0;
+            transition: opacity 0.5s ease-in;
+            z-index: 2;
+        }
+
+        /* Live Price Ticker Enhanced */
+        .price-ticker {
+            height: 48px;
+            background: linear-gradient(90deg, rgba(5,5,5,0.95) 0%, rgba(10,10,10,0.95) 50%, rgba(5,5,5,0.95) 100%);
+            backdrop-filter: blur(20px);
+            border-bottom: 2px solid rgba(255,215,0,0.3);
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.8);
+        }
+
+        .price-ticker::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--ultra-gold), transparent);
+            animation: ticker-scan 3s linear infinite;
+        }
+
+        @keyframes ticker-scan {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .ticker-label {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--ultra-red);
+            color: white;
+            padding: 4px 12px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            border-radius: 2px;
+            animation: live-pulse 1s ease-in-out infinite;
+            box-shadow: var(--glow-red);
+            z-index: 10;
+        }
+
+        @keyframes live-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .ticker-content {
+            display: flex;
+            align-items: center;
+            height: 100%;
+            padding-left: 100px;
+            animation: ticker-scroll 30s linear infinite;
+        }
+
+        @keyframes ticker-scroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        .ticker-item {
+            display: flex;
+            align-items: center;
+            margin-right: 40px;
+            white-space: nowrap;
+            background: rgba(0,0,0,0.5);
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .ticker-item:hover {
+            background: rgba(255,215,0,0.1);
+            border-color: rgba(255,215,0,0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255,215,0,0.2);
+        }
+
+        .ticker-symbol {
+            font-weight: 700;
+            color: var(--ultra-gold);
+            margin-right: 12px;
+            font-size: 14px;
+            text-shadow: var(--glow-amber);
+        }
+
+        .ticker-price {
+            color: white;
+            font-weight: 600;
+            margin-right: 12px;
+            font-size: 14px;
+        }
+
+        .ticker-change {
+            font-weight: 600;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .ticker-change.positive {
+            color: var(--ultra-green);
+            text-shadow: var(--glow-green);
+        }
+
+        .ticker-change.negative {
+            color: var(--ultra-red);
+            text-shadow: var(--glow-red);
+        }
+
+        .ticker-sparkline {
+            margin-left: 12px;
+            height: 20px;
+        }
+
+        /* Terminal Header Enhanced */
+        .terminal-header {
+            background: linear-gradient(135deg, rgba(10,10,10,0.98) 0%, rgba(20,20,20,0.98) 100%);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255,215,0,0.2);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .terminal-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, 
+                transparent, 
+                var(--ultra-gold) 20%, 
+                var(--ultra-amber) 50%, 
+                var(--ultra-gold) 80%, 
+                transparent
+            );
+            animation: header-glow 4s ease-in-out infinite;
+        }
+
+        @keyframes header-glow {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        .terminal-title {
+            font-size: 16px;
+            font-weight: 800;
+            background: linear-gradient(90deg, var(--ultra-gold), var(--ultra-amber), var(--ultra-gold));
+            background-size: 200% 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            animation: gradient-shift 3s ease infinite;
+            text-shadow: var(--glow-amber);
+        }
+
+        .terminal-status {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--ultra-green);
+            border-radius: 50%;
+            animation: status-pulse 2s ease-in-out infinite;
+            box-shadow: var(--glow-green);
+        }
+
+        @keyframes status-pulse {
+            0%, 100% { 
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% { 
+                transform: scale(1.2);
+                opacity: 0.8;
+            }
+        }
+
+        /* Terminal Body */
+        .terminal-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            gap: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Market Overview Cards Ultra Enhanced */
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, rgba(10,10,10,0.9) 0%, rgba(20,20,20,0.9) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,215,0,0.2);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            inset: -50%;
+            background: radial-gradient(circle at center, rgba(255,215,0,0.1), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            border-color: var(--ultra-gold);
+            box-shadow: 0 8px 25px rgba(255,215,0,0.3);
+        }
+
+        .metric-card:hover::before {
+            opacity: 1;
+        }
+
+        .metric-label {
+            font-size: 10px;
+            color: var(--ultra-gray);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            opacity: 0.8;
+        }
+
+        .metric-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--ultra-white);
+            margin-bottom: 4px;
+            text-shadow: 0 2px 10px rgba(255,255,255,0.2);
+        }
+
+        .metric-change {
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .metric-change.positive {
+            color: var(--ultra-green);
+            text-shadow: var(--glow-green);
+        }
+
+        .metric-change.negative {
+            color: var(--ultra-red);
+            text-shadow: var(--glow-red);
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: auto 1fr;
+            gap: 10px;
+            overflow: hidden;
+        }
+
+        /* Ultra Enhanced Panels */
+        .panel {
+            background: linear-gradient(135deg, rgba(10,10,10,0.95) 0%, rgba(15,15,15,0.95) 100%);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255,215,0,0.15);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .panel::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at top right, rgba(255,215,0,0.05), transparent);
+            pointer-events: none;
+        }
+
+        .panel:hover {
+            border-color: rgba(255,215,0,0.3);
+            box-shadow: 0 5px 20px rgba(255,215,0,0.1);
+        }
+
+        .panel-header {
+            height: 36px;
+            background: linear-gradient(90deg, rgba(20,20,20,0.9) 0%, rgba(30,30,30,0.9) 100%);
+            border-bottom: 1px solid rgba(255,215,0,0.2);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .panel-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,215,0,0.5), transparent);
+            animation: panel-scan 4s linear infinite;
+        }
+
+        @keyframes panel-scan {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .panel-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--ultra-gold);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            text-shadow: var(--glow-amber);
+        }
+
+        .panel-controls {
+            margin-left: auto;
+            display: flex;
+            gap: 8px;
+        }
+
+        .panel-btn {
+            width: 28px;
+            height: 28px;
+            background: rgba(255,215,0,0.1);
+            border: 1px solid rgba(255,215,0,0.2);
+            border-radius: 4px;
+            color: var(--ultra-gray);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .panel-btn::before {
+            content: '';
+            position: absolute;
+            inset: -50%;
+            background: radial-gradient(circle at center, rgba(255,215,0,0.4), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .panel-btn:hover {
+            color: var(--ultra-gold);
+            background: rgba(255,215,0,0.2);
+            border-color: var(--ultra-gold);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255,215,0,0.3);
+        }
+
+        .panel-btn:hover::before {
+            opacity: 1;
+        }
+
+        .panel-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Custom SVG Icons */
+        .icon-refresh::before {
+            content: '⟳';
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .icon-maximize::before {
+            content: '⛶';
+            font-size: 16px;
+        }
+
+        .icon-minimize::before {
+            content: '⚊';
+            font-size: 16px;
+        }
+
+        .icon-close::before {
+            content: '✕';
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow: auto;
+            padding: 16px;
+        }
+
+        /* Enhanced scrollbar */
+        .panel-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .panel-content::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.5);
+            border-radius: 4px;
+        }
+
+        .panel-content::-webkit-scrollbar-thumb {
+            background: rgba(255,215,0,0.3);
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+
+        .panel-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,215,0,0.5);
+        }
+
+        /* Interactive Hover Effects for Data Tables */
+        .data-row {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .data-row::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--ultra-gold);
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .data-row:hover {
+            background: rgba(255,215,0,0.05);
+            padding-left: 18px;
+        }
+
+        .data-row:hover::before {
+            transform: scaleY(1);
+        }
+
+        /* Movers Lists Enhanced */
+        .movers-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            height: 100%;
+        }
+
+        .movers-list {
+            background: rgba(0,0,0,0.3);
+            border-radius: 6px;
+            padding: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .movers-header {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .gainers-header {
+            color: var(--ultra-green);
+            text-shadow: var(--glow-green);
+        }
+
+        .losers-header {
+            color: var(--ultra-red);
+            text-shadow: var(--glow-red);
+        }
+
+        .mover-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 6px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 4px;
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .mover-item:hover {
+            transform: translateX(4px);
+            border-color: rgba(255,215,0,0.3);
+            background: rgba(255,215,0,0.05);
+        }
+
+        .mover-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .mover-rank {
+            width: 24px;
+            height: 24px;
+            background: rgba(255,215,0,0.1);
+            border: 1px solid rgba(255,215,0,0.3);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--ultra-gold);
+        }
+
+        .mover-symbol {
+            font-weight: 700;
+            font-size: 12px;
+            color: var(--ultra-white);
+        }
+
+        .mover-change {
+            font-weight: 700;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Trending Section Enhanced */
+        .trending-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .trending-item {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,215,0,0.1);
+            border-radius: 6px;
+            padding: 12px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .trending-item::before {
+            content: '🔥';
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            font-size: 16px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .trending-item:hover {
+            background: rgba(255,215,0,0.05);
+            border-color: rgba(255,215,0,0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255,215,0,0.2);
+        }
+
+        .trending-item:hover::before {
+            opacity: 1;
+        }
+
+        /* Heatmap Enhanced */
+        .heatmap-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 4px;
+            height: 100%;
+            padding: 8px;
+        }
+
+        .heatmap-cell {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            overflow: hidden;
+        }
+
+        .heatmap-cell::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .heatmap-cell.positive::before {
+            background: radial-gradient(circle at center, rgba(0,255,65,0.3), transparent);
+        }
+
+        .heatmap-cell.negative::before {
+            background: radial-gradient(circle at center, rgba(255,7,58,0.3), transparent);
+        }
+
+        .heatmap-cell:hover {
+            transform: scale(1.05);
+            z-index: 10;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+        }
+
+        .heatmap-symbol {
+            font-weight: 700;
+            font-size: 12px;
+            color: var(--ultra-white);
+            margin-bottom: 4px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .heatmap-change {
+            font-weight: 600;
+            font-size: 11px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Fear & Greed Gauge Ultra */
+        .fear-greed-gauge {
+            position: relative;
+            width: 120px;
+            height: 60px;
+            margin: 0 auto;
+        }
+
+        .gauge-arc {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 10px rgba(255,215,0,0.3));
+        }
+
+        .gauge-value {
+            position: absolute;
+            top: 35px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 28px;
+            font-weight: 800;
+            text-shadow: 0 0 20px currentColor;
+        }
+
+        .gauge-label {
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1400px) {
+            .dashboard-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .overview-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 1000px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .overview-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Enhanced Loading Screen -->
+    <div id="loading-screen">
+        <div class="loading-content">
+            <div class="alpha-logo">
+                <div class="logo-text">ALPHA</div>
+                <div class="logo-subtext">TERMINAL</div>
+            </div>
+            <div class="loading-spinner"></div>
+            <div class="loading-status" id="loading-status">Initializing quantum encryption...</div>
+        </div>
+    </div>
+
+    <!-- Ultra Professional Terminal -->
+    <div id="terminal">
+        <!-- Live Price Ticker -->
+        <div class="price-ticker" id="price-ticker">
+            <div class="ticker-label">LIVE</div>
+            <div class="ticker-content" id="ticker-content">
+                <!-- Ticker items will be populated dynamically -->
+            </div>
+        </div>
+
+        <!-- Terminal Header -->
+        <div class="terminal-header">
+            <div class="terminal-title">ALPHATERMINAL BLOOMBERG ULTRA</div>
+            <div class="terminal-status">
+                <div class="status-indicator">
+                    <span class="status-dot"></span>
+                    <span>CONNECTED</span>
+                </div>
+                <div class="status-indicator" id="api-status">
+                    <span>API: <span style="color: var(--ultra-green);">ACTIVE</span></span>
+                </div>
+                <div class="status-indicator" id="current-time">
+                    <!-- Time will be updated dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Terminal Body -->
+        <div class="terminal-body">
+            <!-- Market Overview Cards -->
+            <div class="overview-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Total Market Cap</div>
+                    <div class="metric-value" id="market-cap">$0</div>
+                    <div class="metric-change positive" id="market-cap-change">
+                        <span>↑</span>
+                        <span>0.00%</span>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-label">24h Volume</div>
+                    <div class="metric-value" id="volume-24h">$0</div>
+                    <div class="metric-change" id="volume-change">
+                        <span>→</span>
+                        <span>0.00%</span>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-label">BTC Dominance</div>
+                    <div class="metric-value" id="btc-dominance">0%</div>
+                    <div class="metric-change" id="btc-dom-change">
+                        <span>→</span>
+                        <span>0.00%</span>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-label">ETH Dominance</div>
+                    <div class="metric-value" id="eth-dominance">0%</div>
+                    <div class="metric-change" id="eth-dom-change">
+                        <span>→</span>
+                        <span>0.00%</span>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-label">Fear & Greed</div>
+                    <div id="fear-greed-gauge"></div>
+                </div>
+            </div>
+
+            <!-- Main Dashboard Grid -->
+            <div class="dashboard-grid">
+                <!-- Top Movers Panel -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">TOP MOVERS</div>
+                        <div class="panel-controls">
+                            <button class="panel-btn icon-refresh" onclick="refreshMovers()"></button>
+                            <button class="panel-btn icon-maximize"></button>
+                        </div>
+                    </div>
+                    <div class="panel-content">
+                        <div class="movers-container" id="movers-container">
+                            <!-- Movers will be populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trending Panel -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">TRENDING NOW</div>
+                        <div class="panel-controls">
+                            <button class="panel-btn icon-refresh" onclick="refreshTrending()"></button>
+                            <button class="panel-btn icon-maximize"></button>
+                        </div>
+                    </div>
+                    <div class="panel-content">
+                        <div class="trending-grid" id="trending-grid">
+                            <!-- Trending items will be populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Market Heatmap Panel -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">MARKET HEATMAP</div>
+                        <div class="panel-controls">
+                            <button class="panel-btn icon-refresh" onclick="refreshHeatmap()"></button>
+                            <button class="panel-btn icon-maximize"></button>
+                        </div>
+                    </div>
+                    <div class="panel-content">
+                        <div class="heatmap-container" id="heatmap-container">
+                            <!-- Heatmap will be populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Bloomberg Ultra Terminal Implementation
+        class BloombergUltraTerminal {
+            constructor() {
+                this.socket = null;
+                this.marketData = new Map();
+                this.tickerData = [];
+                this.updateTimers = new Map();
+                this.loadingMessages = [
+                    'Initializing quantum encryption...',
+                    'Connecting to satellite networks...',
+                    'Loading CoinGecko Pro API...',
+                    'Establishing secure channels...',
+                    'Synchronizing market data...',
+                    'Calibrating neural networks...',
+                    'Activating trading algorithms...',
+                    'System ready. Welcome to the Matrix.',
+                    'The Matrix Awakens You...'
+                ];
+                
+                this.init();
+            }
+
+            async init() {
+                await this.showLoadingSequence();
+                await this.loadInitialData();
+                this.setupWebSocket();
+                this.setupUpdates();
+                this.showTerminal();
+            }
+
+            async showLoadingSequence() {
+                const status = document.getElementById('loading-status');
+                
+                for (let i = 0; i < this.loadingMessages.length; i++) {
+                    const message = this.loadingMessages[i];
+                    
+                    if (message === 'The Matrix Awakens You...') {
+                        status.style.color = '#00ff41';
+                        status.style.fontSize = '1.4rem';
+                        status.style.fontWeight = '800';
+                        status.style.textShadow = '0 0 30px rgba(0,255,65,1)';
+                    }
+                    
+                    status.textContent = message;
+                    
+                    const delay = i === this.loadingMessages.length - 1 ? 2000 : 800;
+                    await this.delay(delay);
+                }
+            }
+
+            delay(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            async loadInitialData() {
+                try {
+                    const [overview, ticker, movers, trending, heatmap] = await Promise.all([
+                        this.fetchMarketOverview(),
+                        this.fetchTickerData(),
+                        this.fetchMovers(),
+                        this.fetchTrending(),
+                        this.fetchHeatmap()
+                    ]);
+
+                    this.updateOverview(overview);
+                    this.updateTicker(ticker);
+                    this.updateMovers(movers);
+                    this.updateTrending(trending);
+                    this.updateHeatmap(heatmap);
+                } catch (error) {
+                    console.error('Error loading initial data:', error);
+                    this.showError('Failed to load market data. Please refresh.');
+                }
+            }
+
+            async fetchMarketOverview() {
+                const response = await fetch('/api/market/overview');
+                const data = await response.json();
+                return data.data;
+            }
+
+            async fetchTickerData() {
+                const response = await fetch('/api/market/ticker');
+                const data = await response.json();
+                return data.data;
+            }
+
+            async fetchMovers() {
+                const response = await fetch('/api/market/movers');
+                const data = await response.json();
+                return data.data;
+            }
+
+            async fetchTrending() {
+                const response = await fetch('/api/market/trending');
+                const data = await response.json();
+                return data.data;
+            }
+
+            async fetchHeatmap() {
+                const response = await fetch('/api/market/heatmap');
+                const data = await response.json();
+                return data.data;
+            }
+
+            setupWebSocket() {
+                this.socket = io();
+                
+                this.socket.on('connect', () => {
+                    console.log('WebSocket connected');
+                    this.socket.emit('subscribe', ['ticker', 'market-updates']);
+                    this.updateAPIStatus(true);
+                });
+
+                this.socket.on('price-update', (data) => {
+                    this.handlePriceUpdate(data);
+                });
+
+                this.socket.on('disconnect', () => {
+                    console.log('WebSocket disconnected');
+                    this.updateAPIStatus(false);
+                });
+            }
+
+            updateOverview(data) {
+                if (!data || !data.global) return;
+
+                const global = data.global;
+                
+                // Market Cap
+                document.getElementById('market-cap').textContent = this.formatMarketCap(global.total_market_cap.usd);
+                const capChange = global.market_cap_change_percentage_24h_usd || 0;
+                this.updateChangeElement('market-cap-change', capChange);
+
+                // Volume
+                document.getElementById('volume-24h').textContent = this.formatMarketCap(global.total_volume.usd);
+
+                // Dominance
+                document.getElementById('btc-dominance').textContent = `${global.market_cap_percentage.btc.toFixed(1)}%`;
+                document.getElementById('eth-dominance').textContent = `${global.market_cap_percentage.eth.toFixed(1)}%`;
+
+                // Fear & Greed
+                this.updateFearGreedGauge(data.fearGreedIndex || 50);
+            }
+
+            updateChangeElement(elementId, change) {
+                const element = document.getElementById(elementId);
+                if (change > 0) {
+                    element.className = 'metric-change positive';
+                    element.innerHTML = `<span>↑</span><span>${Math.abs(change).toFixed(2)}%</span>`;
+                } else if (change < 0) {
+                    element.className = 'metric-change negative';
+                    element.innerHTML = `<span>↓</span><span>${Math.abs(change).toFixed(2)}%</span>`;
+                } else {
+                    element.className = 'metric-change';
+                    element.innerHTML = `<span>→</span><span>0.00%</span>`;
+                }
+            }
+
+            updateFearGreedGauge(value) {
+                const container = document.getElementById('fear-greed-gauge');
+                let color, label;
+                
+                if (value < 20) {
+                    color = '#ff0737';
+                    label = 'EXTREME FEAR';
+                } else if (value < 40) {
+                    color = '#ffa500';
+                    label = 'FEAR';
+                } else if (value < 60) {
+                    color = '#ffd700';
+                    label = 'NEUTRAL';
+                } else if (value < 80) {
+                    color = '#90ee90';
+                    label = 'GREED';
+                } else {
+                    color = '#00ff41';
+                    label = 'EXTREME GREED';
+                }
+
+                container.innerHTML = `
+                    <div class="fear-greed-gauge">
+                        <svg class="gauge-arc" viewBox="0 0 100 50">
+                            <path d="M 10 45 A 35 35 0 0 1 90 45" 
+                                  fill="none" 
+                                  stroke="rgba(255,255,255,0.1)" 
+                                  stroke-width="8"/>
+                            <path d="M 10 45 A 35 35 0 0 1 90 45" 
+                                  fill="none" 
+                                  stroke="${color}" 
+                                  stroke-width="8"
+                                  stroke-dasharray="${value * 1.1} 110"
+                                  style="transition: stroke-dasharray 1s ease;"/>
+                        </svg>
+                        <div class="gauge-value" style="color: ${color};">${value}</div>
+                        <div class="gauge-label" style="color: ${color};">${label}</div>
+                    </div>
+                `;
+            }
+
+            updateTicker(data) {
+                const container = document.getElementById('ticker-content');
+                this.tickerData = data;
+
+                const items = data.map(coin => {
+                    const changeColor = coin.price_change_percentage_24h >= 0 ? 'positive' : 'negative';
+                    const sparkline = coin.sparkline_in_7d ? this.createSparkline(coin.sparkline_in_7d.price.slice(-20), coin.price_change_percentage_24h >= 0) : '';
+
+                    return `
+                        <div class="ticker-item" data-symbol="${coin.symbol}">
+                            <span class="ticker-symbol">${coin.symbol.toUpperCase()}</span>
+                            <span class="ticker-price">$${this.formatPrice(coin.current_price)}</span>
+                            <span class="ticker-change ${changeColor}">
+                                ${coin.price_change_percentage_24h >= 0 ? '↑' : '↓'} 
+                                ${Math.abs(coin.price_change_percentage_24h).toFixed(2)}%
+                            </span>
+                            ${sparkline}
+                        </div>
+                    `;
+                }).join('');
+
+                // Duplicate for seamless scrolling
+                container.innerHTML = items + items;
+            }
+
+            createSparkline(data, isPositive) {
+                const color = isPositive ? '#00ff41' : '#ff0737';
+                const width = 60;
+                const height = 20;
+                const max = Math.max(...data);
+                const min = Math.min(...data);
+                const range = max - min;
+                
+                const points = data.map((value, index) => {
+                    const x = (index / (data.length - 1)) * width;
+                    const y = height - ((value - min) / range) * height;
+                    return `${x},${y}`;
+                }).join(' ');
+
+                return `
+                    <svg class="ticker-sparkline" width="${width}" height="${height}" style="filter: drop-shadow(0 0 3px ${color});">
+                        <polyline 
+                            points="${points}" 
+                            fill="none" 
+                            stroke="${color}" 
+                            stroke-width="1.5"
+                        />
+                    </svg>
+                `;
+            }
+
+            updateMovers(data) {
+                const container = document.getElementById('movers-container');
+                
+                const gainersHtml = `
+                    <div class="movers-list">
+                        <div class="movers-header gainers-header">🚀 TOP GAINERS</div>
+                        ${data.gainers.slice(0, 5).map((coin, index) => `
+                            <div class="mover-item">
+                                <div class="mover-info">
+                                    <div class="mover-rank">${index + 1}</div>
+                                    <div class="mover-symbol">${coin.symbol.toUpperCase()}</div>
+                                </div>
+                                <div class="mover-change positive">
+                                    ↑ ${coin.price_change_percentage_24h.toFixed(2)}%
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+
+                const losersHtml = `
+                    <div class="movers-list">
+                        <div class="movers-header losers-header">💀 TOP LOSERS</div>
+                        ${data.losers.slice(0, 5).map((coin, index) => `
+                            <div class="mover-item">
+                                <div class="mover-info">
+                                    <div class="mover-rank">${index + 1}</div>
+                                    <div class="mover-symbol">${coin.symbol.toUpperCase()}</div>
+                                </div>
+                                <div class="mover-change negative">
+                                    ↓ ${Math.abs(coin.price_change_percentage_24h).toFixed(2)}%
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+
+                container.innerHTML = gainersHtml + losersHtml;
+            }
+
+            updateTrending(data) {
+                const container = document.getElementById('trending-grid');
+                
+                if (data.coins) {
+                    container.innerHTML = data.coins.slice(0, 6).map(item => {
+                        const coin = item.item;
+                        return `
+                            <div class="trending-item">
+                                <div style="font-weight: 700; margin-bottom: 4px;">${coin.symbol.toUpperCase()}</div>
+                                <div style="font-size: 10px; color: var(--ultra-gray);">${coin.name}</div>
+                                <div style="font-size: 11px; margin-top: 4px;">Rank #${coin.market_cap_rank}</div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+
+            updateHeatmap(data) {
+                const container = document.getElementById('heatmap-container');
+                
+                // Sort by market cap for size representation
+                const sorted = data.sort((a, b) => b.market_cap - a.market_cap).slice(0, 20);
+                
+                container.innerHTML = sorted.map(coin => {
+                    const changeClass = coin.price_change_percentage_24h >= 0 ? 'positive' : 'negative';
+                    const changeColor = coin.price_change_percentage_24h >= 0 ? 'var(--ultra-green)' : 'var(--ultra-red)';
+                    
+                    return `
+                        <div class="heatmap-cell ${changeClass}" 
+                             style="grid-column: span ${this.getGridSize(coin.market_cap, sorted[0].market_cap)}">
+                            <div class="heatmap-symbol">${coin.symbol.toUpperCase()}</div>
+                            <div class="heatmap-change" style="color: ${changeColor};">
+                                ${coin.price_change_percentage_24h >= 0 ? '+' : ''}${coin.price_change_percentage_24h.toFixed(1)}%
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            getGridSize(marketCap, maxMarketCap) {
+                const ratio = marketCap / maxMarketCap;
+                if (ratio > 0.5) return 2;
+                if (ratio > 0.25) return 1;
+                return 1;
+            }
+
+            handlePriceUpdate(data) {
+                if (!data.data) return;
+
+                data.data.forEach(coin => {
+                    const existingCoin = this.tickerData.find(t => t.id === coin.id);
+                    if (existingCoin) {
+                        // Update ticker item with flash effect
+                        const tickerItems = document.querySelectorAll(`.ticker-item[data-symbol="${coin.symbol}"]`);
+                        tickerItems.forEach(item => {
+                            const priceEl = item.querySelector('.ticker-price');
+                            const changeEl = item.querySelector('.ticker-change');
+                            
+                            // Flash effect
+                            priceEl.style.transition = 'color 0.3s, text-shadow 0.3s';
+                            priceEl.style.color = coin.price_change_percentage_24h >= 0 ? 'var(--ultra-green)' : 'var(--ultra-red)';
+                            priceEl.style.textShadow = coin.price_change_percentage_24h >= 0 ? 'var(--glow-green)' : 'var(--glow-red)';
+                            
+                            setTimeout(() => {
+                                priceEl.style.color = 'white';
+                                priceEl.style.textShadow = 'none';
+                            }, 300);
+
+                            priceEl.textContent = `$${this.formatPrice(coin.current_price)}`;
+                            changeEl.textContent = `${coin.price_change_percentage_24h >= 0 ? '↑' : '↓'} ${Math.abs(coin.price_change_percentage_24h).toFixed(2)}%`;
+                            changeEl.className = `ticker-change ${coin.price_change_percentage_24h >= 0 ? 'positive' : 'negative'}`;
+                        });
+                    }
+                });
+            }
+
+            setupUpdates() {
+                // Update time
+                setInterval(() => {
+                    const now = new Date();
+                    document.getElementById('current-time').textContent = 
+                        now.toLocaleTimeString('en-US', { 
+                            hour12: false, 
+                            hour: '2-digit', 
+                            minute: '2-digit', 
+                            second: '2-digit' 
+                        }) + ' UTC';
+                }, 1000);
+
+                // Refresh data periodically
+                setInterval(() => this.loadInitialData(), 60000); // Every minute
+            }
+
+            updateAPIStatus(connected) {
+                const statusEl = document.getElementById('api-status');
+                statusEl.innerHTML = connected ? 
+                    '<span>API: <span style="color: var(--ultra-green); text-shadow: var(--glow-green);">ACTIVE</span></span>' :
+                    '<span>API: <span style="color: var(--ultra-red); text-shadow: var(--glow-red);">DISCONNECTED</span></span>';
+            }
+
+            formatPrice(price) {
+                if (price >= 1000) return price.toLocaleString('en-US', { maximumFractionDigits: 2 });
+                if (price >= 1) return price.toFixed(2);
+                if (price >= 0.01) return price.toFixed(4);
+                return price.toFixed(8);
+            }
+
+            formatMarketCap(cap) {
+                if (cap >= 1e12) return `$${(cap / 1e12).toFixed(1)}T`;
+                if (cap >= 1e9) return `$${(cap / 1e9).toFixed(1)}B`;
+                if (cap >= 1e6) return `$${(cap / 1e6).toFixed(1)}M`;
+                return `$${(cap / 1e3).toFixed(1)}K`;
+            }
+
+            showTerminal() {
+                const loadingScreen = document.getElementById('loading-screen');
+                const terminal = document.getElementById('terminal');
+                
+                loadingScreen.style.opacity = '0';
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                    terminal.style.display = 'flex';
+                    setTimeout(() => {
+                        terminal.style.opacity = '1';
+                    }, 50);
+                }, 500);
+            }
+
+            showError(message) {
+                console.error(message);
+                // Could implement a toast notification system here
+            }
+        }
+
+        // Global functions for refresh buttons
+        window.refreshMovers = async function() {
+            const terminal = window.terminal;
+            const btn = event.target;
+            btn.style.animation = 'spin 1s ease';
+            
+            const data = await terminal.fetchMovers();
+            terminal.updateMovers(data);
+            
+            setTimeout(() => {
+                btn.style.animation = '';
+            }, 1000);
+        };
+
+        window.refreshTrending = async function() {
+            const terminal = window.terminal;
+            const btn = event.target;
+            btn.style.animation = 'spin 1s ease';
+            
+            const data = await terminal.fetchTrending();
+            terminal.updateTrending(data);
+            
+            setTimeout(() => {
+                btn.style.animation = '';
+            }, 1000);
+        };
+
+        window.refreshHeatmap = async function() {
+            const terminal = window.terminal;
+            const btn = event.target;
+            btn.style.animation = 'spin 1s ease';
+            
+            const data = await terminal.fetchHeatmap();
+            terminal.updateHeatmap(data);
+            
+            setTimeout(() => {
+                btn.style.animation = '';
+            }, 1000);
+        };
+
+        // Initialize terminal
+        window.addEventListener('DOMContentLoaded', () => {
+            window.terminal = new BloombergUltraTerminal();
+        });
+    </script>
+</body>
+</html>

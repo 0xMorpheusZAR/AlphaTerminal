@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Bloomberg Terminal Colors */
+    --bloomberg-black: 10 10 10;
+    --bloomberg-darker: 5 5 5;
+    --bloomberg-dark: 15 15 15;
+    --bloomberg-amber: 255 176 0;
+    --bloomberg-green: 0 255 0;
+    --bloomberg-red: 255 0 0;
+    --bloomberg-blue: 0 170 255;
+    --bloomberg-gray: 128 128 128;
+    --bloomberg-border: 40 40 40;
+    
+    /* Text colors */
+    --text-primary: 255 255 255;
+    --text-secondary: 180 180 180;
+    --text-tertiary: 120 120 120;
+    
+    /* Component specific */
+    --background: var(--bloomberg-black);
+    --foreground: var(--text-primary);
+    --card: var(--bloomberg-dark);
+    --card-foreground: var(--text-primary);
+    --popover: var(--bloomberg-dark);
+    --popover-foreground: var(--text-primary);
+    --primary: var(--bloomberg-amber);
+    --primary-foreground: var(--bloomberg-black);
+    --secondary: var(--bloomberg-dark);
+    --secondary-foreground: var(--text-primary);
+    --muted: var(--bloomberg-dark);
+    --muted-foreground: var(--text-secondary);
+    --accent: var(--bloomberg-amber);
+    --accent-foreground: var(--bloomberg-black);
+    --destructive: var(--bloomberg-red);
+    --destructive-foreground: var(--text-primary);
+    --border: var(--bloomberg-border);
+    --input: var(--bloomberg-dark);
+    --ring: var(--bloomberg-amber);
+    --radius: 0.25rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  /* Bloomberg Terminal specific styles */
+  .bloomberg-gradient {
+    background: linear-gradient(180deg, rgb(var(--bloomberg-darker)) 0%, rgb(var(--bloomberg-black)) 100%);
+  }
+  
+  .price-flash-green {
+    animation: flash-green 0.5s ease-in-out;
+  }
+  
+  .price-flash-red {
+    animation: flash-red 0.5s ease-in-out;
+  }
+  
+  @keyframes flash-green {
+    0%, 100% { background-color: transparent; }
+    50% { background-color: rgba(0, 255, 0, 0.2); }
+  }
+  
+  @keyframes flash-red {
+    0%, 100% { background-color: transparent; }
+    50% { background-color: rgba(255, 0, 0, 0.2); }
+  }
+  
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: rgb(var(--bloomberg-darker));
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--bloomberg-border));
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--bloomberg-gray));
+  }
+  
+  /* Data grid styles */
+  .data-grid {
+    @apply font-mono text-xs;
+  }
+  
+  .data-grid th {
+    @apply text-left font-semibold text-bloomberg-amber uppercase tracking-wider;
+    @apply border-b border-bloomberg-border py-2 px-3;
+  }
+  
+  .data-grid td {
+    @apply py-1.5 px-3 border-b border-bloomberg-border/30;
+  }
+  
+  .data-grid tr:hover {
+    @apply bg-bloomberg-dark/50;
+  }
+  
+  /* Terminal input styling */
+  .terminal-input {
+    @apply bg-bloomberg-darker border-bloomberg-border text-bloomberg-amber;
+    @apply font-mono text-sm px-3 py-2;
+  }
+  
+  .terminal-input:focus {
+    @apply outline-none ring-1 ring-bloomberg-amber/50;
+  }
+}

@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlphaTerminal | Professional Trading Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    <style>
+        :root {
+            --bb-black: #000000;
+            --bb-dark-gray: #0a0a0a;
+            --bb-gray: #1a1a1a;
+            --bb-light-gray: #2a2a2a;
+            --bb-text: #d0d0d0;
+            --bb-white: #ffffff;
+            --bb-orange: #ff6600;
+            --bb-amber: #ffb000;
+            --bb-yellow: #ffd700;
+            --bb-green: #00ff00;
+            --bb-red: #ff0000;
+            --bb-blue: #0080ff;
+            --bb-purple: #b026ff;
+            
+            --ticker-height: 60px;
+            --tab-height: 36px;
+            --header-total: 96px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', 'Monaco', 'Consolas', monospace;
+            background: var(--bb-black);
+            color: var(--bb-text);
+            overflow: hidden;
+            font-size: 11px;
+            line-height: 1.4;
+            -webkit-font-smoothing: antialiased;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Loading Screen - Original AlphaTerminal Style */
+        #loading-screen {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 1s ease-out;
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        .alpha-logo {
+            margin-bottom: 40px;
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        .logo-text {
+            font-size: 48px;
+            font-weight: 700;
+            letter-spacing: 8px;
+            background: linear-gradient(45deg, #00ff41, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(0, 255, 65, 0.5);
+        }
+
+        .logo-subtext {
+            font-size: 18px;
+            font-weight: 300;
+            letter-spacing: 12px;
+            color: #00ff41;
+            margin-top: -5px;
+            opacity: 0.8;
+        }
+
+        @keyframes glow {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.2); }
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 2px solid rgba(0, 255, 65, 0.1);
+            border-top-color: #00ff41;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 30px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-status {
+            font-size: 14px;
+            color: #00ff41;
+            opacity: 0.8;
+            min-height: 20px;
+            transition: all 0.3s ease;
+        }
+
+        /* Main Layout */
+        #terminal {
+            display: none;
+            flex-direction: column;
+            height: 100vh;
+            opacity: 0;
+            transition: opacity 0.5s ease-in;
+        }
+
+        /* Fixed Ticker Bar - 60px */
+        .ticker-bar {
+            height: var(--ticker-height);
+            background: var(--bb-dark-gray);
+            border-bottom: 1px solid var(--bb-gray);
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .ticker-label {
+            position: absolute;
+            left: 20px;
+            background: var(--bb-red);
+            color: var(--bb-white);
+            padding: 4px 12px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            z-index: 10;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .ticker-content {
+            display: flex;
+            align-items: center;
+            padding-left: 100px;
+            animation: scroll 60s linear infinite;
+        }
+
+        @keyframes scroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        .ticker-item {
+            display: flex;
+            align-items: center;
+            margin-right: 40px;
+            white-space: nowrap;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 2px;
+        }
+
+        .ticker-symbol {
+            font-weight: 700;
+            color: var(--bb-amber);
+            margin-right: 10px;
+            font-size: 12px;
+        }
+
+        .ticker-price {
+            color: var(--bb-white);
+            font-weight: 600;
+            margin-right: 10px;
+            font-size: 12px;
+        }
+
+        .ticker-change {
+            font-weight: 600;
+            font-size: 11px;
+        }
+
+        .ticker-change.positive {
+            color: var(--bb-green);
+        }
+
+        .ticker-change.negative {
+            color: var(--bb-red);
+        }
+
+        /* Tab Navigation */
+        .tab-bar {
+            height: var(--tab-height);
+            background: var(--bb-gray);
+            border-bottom: 2px solid var(--bb-orange);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            flex-shrink: 0;
+        }
+
+        .tab {
+            padding: 8px 20px;
+            background: transparent;
+            border: none;
+            color: var(--bb-text);
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
+            position: relative;
+            margin-right: 2px;
+        }
+
+        .tab::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--bb-orange);
+            transform: scaleX(0);
+            transition: transform 0.2s ease;
+        }
+
+        .tab:hover {
+            color: var(--bb-white);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab.active {
+            color: var(--bb-orange);
+            background: rgba(255, 102, 0, 0.1);
+        }
+
+        .tab.active::after {
+            transform: scaleX(1);
+        }
+
+        /* Main Grid Layout */
+        .main-grid {
+            flex: 1;
+            display: grid;
+            grid-template-rows: 35% 30% 35%;
+            gap: 1px;
+            background: var(--bb-gray);
+            padding: 1px;
+            overflow: hidden;
+        }
+
+        /* Row 1: Market Overview */
+        .row-1 {
+            display: grid;
+            grid-template-columns: 20% 35% 25% 20%;
+            gap: 1px;
+        }
+
+        /* Row 2: Data Grids */
+        .row-2 {
+            display: grid;
+            grid-template-columns: 30% 40% 30%;
+            gap: 1px;
+        }
+
+        /* Row 3: Detail Views */
+        .row-3 {
+            display: grid;
+            grid-template-columns: 50% 25% 25%;
+            gap: 1px;
+        }
+
+        /* Panel Styles */
+        .panel {
+            background: var(--bb-black);
+            border: 1px solid var(--bb-gray);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .panel-header {
+            height: 28px;
+            background: var(--bb-dark-gray);
+            border-bottom: 1px solid var(--bb-gray);
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            user-select: none;
+        }
+
+        .panel-title {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--bb-amber);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .panel-controls {
+            margin-left: auto;
+            display: flex;
+            gap: 8px;
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow: auto;
+            padding: 12px;
+        }
+
+        /* Metrics Panel */
+        .metric-item {
+            padding: 10px;
+            border-bottom: 1px solid var(--bb-gray);
+        }
+
+        .metric-label {
+            font-size: 9px;
+            color: #808080;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .metric-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--bb-white);
+        }
+
+        .metric-change {
+            font-size: 11px;
+            margin-top: 2px;
+        }
+
+        /* Watchlist Styles */
+        .watchlist-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .watchlist-item:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .watchlist-symbol {
+            font-weight: 600;
+            color: var(--bb-white);
+        }
+
+        .watchlist-price {
+            text-align: right;
+        }
+
+        /* Movers Table */
+        .movers-table {
+            width: 100%;
+            font-size: 10px;
+        }
+
+        .movers-table th {
+            text-align: left;
+            padding: 6px;
+            color: #808080;
+            font-weight: 500;
+            border-bottom: 1px solid var(--bb-gray);
+        }
+
+        .movers-table td {
+            padding: 6px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+        }
+
+        /* News Feed */
+        .news-item {
+            padding: 10px;
+            border-bottom: 1px solid var(--bb-gray);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .news-item:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .news-time {
+            font-size: 9px;
+            color: #808080;
+            margin-bottom: 4px;
+        }
+
+        .news-headline {
+            font-size: 11px;
+            color: var(--bb-white);
+            line-height: 1.4;
+        }
+
+        .news-source {
+            font-size: 9px;
+            color: var(--bb-amber);
+            margin-top: 4px;
+        }
+
+        /* Order Book */
+        .orderbook-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .orderbook-header {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            padding: 6px;
+            border-bottom: 1px solid var(--bb-gray);
+            font-size: 9px;
+            color: #808080;
+        }
+
+        .orderbook-data {
+            flex: 1;
+            overflow: auto;
+        }
+
+        .orderbook-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            padding: 4px 6px;
+            font-size: 10px;
+            position: relative;
+        }
+
+        .orderbook-row.bid {
+            background: rgba(0, 255, 0, 0.05);
+        }
+
+        .orderbook-row.ask {
+            background: rgba(255, 0, 0, 0.05);
+        }
+
+        .orderbook-bar {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            opacity: 0.2;
+        }
+
+        .orderbook-bar.bid {
+            background: var(--bb-green);
+            right: 0;
+        }
+
+        .orderbook-bar.ask {
+            background: var(--bb-red);
+            left: 0;
+        }
+
+        /* Chart Container */
+        .chart-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .chart-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 4px;
+            z-index: 10;
+        }
+
+        .chart-btn {
+            padding: 4px 8px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid var(--bb-gray);
+            color: var(--bb-text);
+            font-size: 9px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .chart-btn:hover {
+            background: var(--bb-gray);
+            color: var(--bb-white);
+        }
+
+        .chart-btn.active {
+            background: var(--bb-orange);
+            color: var(--bb-white);
+            border-color: var(--bb-orange);
+        }
+
+        /* DEX Heatmap */
+        .dex-heatmap {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 4px;
+            padding: 8px;
+        }
+
+        .pool-cell {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--bb-dark-gray);
+            border: 1px solid var(--bb-gray);
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pool-cell::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            opacity: 0.3;
+        }
+
+        .pool-cell.high-apy::before {
+            background: radial-gradient(circle, var(--bb-green), transparent);
+        }
+
+        .pool-cell.medium-apy::before {
+            background: radial-gradient(circle, var(--bb-yellow), transparent);
+        }
+
+        .pool-cell.low-apy::before {
+            background: radial-gradient(circle, var(--bb-blue), transparent);
+        }
+
+        .pool-cell:hover {
+            transform: scale(1.05);
+            border-color: var(--bb-orange);
+            z-index: 10;
+        }
+
+        .pool-pair {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--bb-white);
+            z-index: 1;
+        }
+
+        .pool-apy {
+            font-size: 12px;
+            font-weight: 700;
+            margin-top: 4px;
+            z-index: 1;
+        }
+
+        .pool-tvl {
+            font-size: 9px;
+            color: #808080;
+            margin-top: 2px;
+            z-index: 1;
+        }
+
+        /* NFT Board */
+        .nft-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            padding: 12px;
+        }
+
+        .nft-card {
+            background: var(--bb-dark-gray);
+            border: 1px solid var(--bb-gray);
+            border-radius: 4px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .nft-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            border-color: var(--bb-orange);
+        }
+
+        .nft-image {
+            width: 100%;
+            aspect-ratio: 1;
+            background: var(--bb-gray);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .nft-info {
+            padding: 8px;
+        }
+
+        .nft-collection {
+            font-size: 9px;
+            color: #808080;
+            margin-bottom: 2px;
+        }
+
+        .nft-floor {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--bb-white);
+        }
+
+        .nft-change {
+            font-size: 10px;
+            margin-top: 2px;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bb-black);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--bb-gray);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--bb-light-gray);
+        }
+
+        /* Responsive */
+        @media (max-width: 1400px) {
+            .row-1 {
+                grid-template-columns: 25% 35% 40%;
+            }
+            
+            .row-1 > .panel:last-child {
+                display: none;
+            }
+        }
+
+        @media (max-width: 1000px) {
+            body {
+                font-size: 10px;
+            }
+            
+            .panel-title {
+                font-size: 9px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loading-content">
+            <div class="alpha-logo">
+                <div class="logo-text">ALPHA</div>
+                <div class="logo-subtext">TERMINAL</div>
+            </div>
+            <div class="loading-spinner"></div>
+            <div class="loading-status" id="loading-status">Initializing quantum encryption...</div>
+        </div>
+    </div>
+
+    <!-- Main Terminal -->
+    <div id="terminal">
+        <!-- Fixed Ticker Bar (60px) -->
+        <div class="ticker-bar">
+            <div class="ticker-label">LIVE</div>
+            <div class="ticker-content" id="ticker-content">
+                <!-- Ticker items populated by JS -->
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-bar">
+            <button class="tab active" data-view="spot">SPOT</button>
+            <button class="tab" data-view="futures">FUTURES</button>
+            <button class="tab" data-view="options">OPTIONS</button>
+            <button class="tab" data-view="defi">DEFI</button>
+            <button class="tab" data-view="nft">NFT</button>
+            <button class="tab" data-view="analytics">ANALYTICS</button>
+            <button class="tab" data-view="news">NEWS</button>
+            <button class="tab" data-view="portfolio">PORTFOLIO</button>
+        </div>
+
+        <!-- Main Grid Layout -->
+        <div class="main-grid">
+            <!-- Row 1: Market Overview (35%) -->
+            <div class="row-1">
+                <!-- Market Metrics -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">MARKET METRICS</div>
+                    </div>
+                    <div class="panel-content" id="market-metrics">
+                        <div class="metric-item">
+                            <div class="metric-label">Market Cap</div>
+                            <div class="metric-value">$2.45T</div>
+                            <div class="metric-change positive">↑ 2.3%</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">24h Volume</div>
+                            <div class="metric-value">$124.5B</div>
+                            <div class="metric-change negative">↓ 5.1%</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">BTC Dominance</div>
+                            <div class="metric-value">48.3%</div>
+                            <div class="metric-change positive">↑ 0.5%</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">Fear & Greed</div>
+                            <div class="metric-value">65</div>
+                            <div class="metric-change">GREED</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Watchlist -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">WATCHLIST</div>
+                        <div class="panel-controls">
+                            <button class="panel-btn">+</button>
+                        </div>
+                    </div>
+                    <div class="panel-content" id="watchlist">
+                        <!-- Watchlist items populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Top Movers -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">TOP MOVERS</div>
+                    </div>
+                    <div class="panel-content">
+                        <table class="movers-table" id="movers-table">
+                            <thead>
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Price</th>
+                                    <th>24h%</th>
+                                </tr>
+                            </thead>
+                            <tbody id="movers-tbody">
+                                <!-- Movers data populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- News Feed -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">NEWS</div>
+                    </div>
+                    <div class="panel-content" id="news-feed">
+                        <!-- News items populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 2: Data Grids (30%) -->
+            <div class="row-2">
+                <!-- Order Book -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">ORDER BOOK - BTC/USDT</div>
+                    </div>
+                    <div class="panel-content">
+                        <div class="orderbook-container">
+                            <div class="orderbook-header">
+                                <div>Price</div>
+                                <div>Amount</div>
+                                <div>Total</div>
+                            </div>
+                            <div class="orderbook-data" id="orderbook">
+                                <!-- Order book data populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Positions/Trades -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">RECENT TRADES</div>
+                    </div>
+                    <div class="panel-content" id="recent-trades">
+                        <!-- Trades populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Market Depth -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">MARKET DEPTH</div>
+                    </div>
+                    <div class="panel-content">
+                        <div class="chart-container" id="depth-chart">
+                            <!-- Depth chart rendered here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 3: Detail Views (35%) -->
+            <div class="row-3">
+                <!-- Asset Detail (Charts) -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">BTC/USDT - BINANCE</div>
+                        <div class="panel-controls">
+                            <div class="chart-controls">
+                                <button class="chart-btn active" data-interval="1m">1m</button>
+                                <button class="chart-btn" data-interval="5m">5m</button>
+                                <button class="chart-btn" data-interval="15m">15m</button>
+                                <button class="chart-btn" data-interval="1h">1h</button>
+                                <button class="chart-btn" data-interval="4h">4h</button>
+                                <button class="chart-btn" data-interval="1d">1d</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel-content">
+                        <div class="chart-container" id="main-chart">
+                            <!-- TradingView chart rendered here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DEX Heatmap -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">DEX POOLS HEATMAP</div>
+                    </div>
+                    <div class="panel-content">
+                        <div class="dex-heatmap" id="dex-heatmap">
+                            <!-- DEX pools populated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NFT Board -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">NFT COLLECTIONS</div>
+                    </div>
+                    <div class="panel-content">
+                        <div class="nft-grid" id="nft-grid">
+                            <!-- NFT collections populated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class BloombergTerminal {
+            constructor() {
+                this.socket = null;
+                this.currentView = 'spot';
+                this.selectedAsset = 'BTC/USDT';
+                this.chart = null;
+                this.loadingMessages = [
+                    'Initializing quantum encryption...',
+                    'Connecting to satellite networks...',
+                    'Loading CoinGecko Pro API...',
+                    'Establishing secure channels...',
+                    'Synchronizing market data...',
+                    'Calibrating neural networks...',
+                    'Activating trading algorithms...',
+                    'System ready. Welcome to the Matrix.',
+                    'The Matrix Awakens You...'
+                ];
+                
+                this.init();
+            }
+
+            async init() {
+                await this.showLoadingSequence();
+                this.setupTabs();
+                this.initializeChart();
+                await this.loadInitialData();
+                this.setupWebSocket();
+                this.startUpdates();
+                this.showTerminal();
+            }
+
+            async showLoadingSequence() {
+                const status = document.getElementById('loading-status');
+                
+                for (let i = 0; i < this.loadingMessages.length; i++) {
+                    const message = this.loadingMessages[i];
+                    
+                    if (message === 'The Matrix Awakens You...') {
+                        status.style.color = '#00ff41';
+                        status.style.fontSize = '1.2rem';
+                        status.style.fontWeight = '600';
+                        status.style.textShadow = '0 0 20px rgba(0, 255, 65, 0.8)';
+                    }
+                    
+                    status.textContent = message;
+                    const delay = i === this.loadingMessages.length - 1 ? 2000 : 800;
+                    await this.delay(delay);
+                }
+            }
+
+            delay(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            setupTabs() {
+                const tabs = document.querySelectorAll('.tab');
+                tabs.forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        tabs.forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        this.currentView = tab.dataset.view;
+                        this.updateView();
+                    });
+                });
+            }
+
+            initializeChart() {
+                const chartContainer = document.getElementById('main-chart');
+                this.chart = LightweightCharts.createChart(chartContainer, {
+                    width: chartContainer.clientWidth,
+                    height: chartContainer.clientHeight,
+                    layout: {
+                        background: { color: '#000000' },
+                        textColor: '#d0d0d0',
+                    },
+                    grid: {
+                        vertLines: { color: '#1a1a1a' },
+                        horzLines: { color: '#1a1a1a' },
+                    },
+                    crosshair: {
+                        mode: LightweightCharts.CrosshairMode.Normal,
+                    },
+                    rightPriceScale: {
+                        borderColor: '#1a1a1a',
+                    },
+                    timeScale: {
+                        borderColor: '#1a1a1a',
+                        timeVisible: true,
+                        secondsVisible: false,
+                    },
+                });
+
+                this.candlestickSeries = this.chart.addCandlestickSeries({
+                    upColor: '#00ff00',
+                    downColor: '#ff0000',
+                    borderDownColor: '#ff0000',
+                    borderUpColor: '#00ff00',
+                    wickDownColor: '#ff0000',
+                    wickUpColor: '#00ff00',
+                });
+
+                // Handle resize
+                window.addEventListener('resize', () => {
+                    this.chart.applyOptions({
+                        width: chartContainer.clientWidth,
+                        height: chartContainer.clientHeight,
+                    });
+                });
+            }
+
+            async loadInitialData() {
+                try {
+                    // Load all data in parallel
+                    const [ticker, watchlist, movers, orderbook, dexPools, nftData] = await Promise.all([
+                        this.fetchTickerData(),
+                        this.fetchWatchlist(),
+                        this.fetchMovers(),
+                        this.fetchOrderBook(),
+                        this.fetchDexPools(),
+                        this.fetchNFTData()
+                    ]);
+
+                    this.updateTicker(ticker);
+                    this.updateWatchlist(watchlist);
+                    this.updateMovers(movers);
+                    this.updateOrderBook(orderbook);
+                    this.updateDexHeatmap(dexPools);
+                    this.updateNFTBoard(nftData);
+                    
+                    // Load chart data
+                    await this.loadChartData();
+                } catch (error) {
+                    console.error('Error loading initial data:', error);
+                }
+            }
+
+            async fetchTickerData() {
+                const response = await fetch('/api/market/ticker');
+                const data = await response.json();
+                return data.data || [];
+            }
+
+            async fetchWatchlist() {
+                // Simulate watchlist data
+                return [
+                    { symbol: 'BTC', price: 65234.50, change: 2.3 },
+                    { symbol: 'ETH', price: 3421.20, change: -1.2 },
+                    { symbol: 'BNB', price: 542.30, change: 0.8 },
+                    { symbol: 'SOL', price: 142.50, change: 5.4 },
+                    { symbol: 'ADA', price: 0.62, change: -2.1 }
+                ];
+            }
+
+            async fetchMovers() {
+                const response = await fetch('/api/market/movers');
+                const data = await response.json();
+                return data.data || { gainers: [], losers: [] };
+            }
+
+            async fetchOrderBook() {
+                // Simulate order book data
+                const bids = [];
+                const asks = [];
+                
+                for (let i = 0; i < 15; i++) {
+                    bids.push({
+                        price: 65200 - i * 10,
+                        amount: Math.random() * 5,
+                        total: 0
+                    });
+                    asks.push({
+                        price: 65210 + i * 10,
+                        amount: Math.random() * 5,
+                        total: 0
+                    });
+                }
+                
+                return { bids, asks };
+            }
+
+            async fetchDexPools() {
+                // Simulate DEX pool data
+                const pools = [];
+                const pairs = ['ETH/USDC', 'BTC/ETH', 'USDC/DAI', 'MATIC/ETH', 'LINK/ETH', 'UNI/ETH'];
+                
+                for (let i = 0; i < 12; i++) {
+                    pools.push({
+                        pair: pairs[i % pairs.length],
+                        apy: Math.random() * 50,
+                        tvl: Math.random() * 10000000
+                    });
+                }
+                
+                return pools;
+            }
+
+            async fetchNFTData() {
+                // Simulate NFT collection data
+                return [
+                    { collection: 'CryptoPunks', floor: 52.5, change: -2.3 },
+                    { collection: 'BAYC', floor: 38.2, change: 1.5 },
+                    { collection: 'Azuki', floor: 12.8, change: -5.2 },
+                    { collection: 'Doodles', floor: 6.2, change: 3.1 },
+                    { collection: 'CloneX', floor: 3.5, change: -1.8 },
+                    { collection: 'Moonbirds', floor: 2.8, change: 0.5 }
+                ];
+            }
+
+            async loadChartData() {
+                // Simulate candlestick data
+                const data = [];
+                const basePrice = 65000;
+                const now = Date.now();
+                
+                for (let i = 100; i >= 0; i--) {
+                    const time = now - i * 60000;
+                    const open = basePrice + (Math.random() - 0.5) * 200;
+                    const close = open + (Math.random() - 0.5) * 100;
+                    const high = Math.max(open, close) + Math.random() * 50;
+                    const low = Math.min(open, close) - Math.random() * 50;
+                    
+                    data.push({
+                        time: Math.floor(time / 1000),
+                        open,
+                        high,
+                        low,
+                        close
+                    });
+                }
+                
+                this.candlestickSeries.setData(data);
+            }
+
+            updateTicker(data) {
+                const container = document.getElementById('ticker-content');
+                const items = data.slice(0, 20).map(coin => {
+                    const changeClass = coin.price_change_percentage_24h >= 0 ? 'positive' : 'negative';
+                    return `
+                        <div class="ticker-item">
+                            <span class="ticker-symbol">${coin.symbol.toUpperCase()}</span>
+                            <span class="ticker-price">$${this.formatPrice(coin.current_price)}</span>
+                            <span class="ticker-change ${changeClass}">
+                                ${coin.price_change_percentage_24h >= 0 ? '↑' : '↓'} 
+                                ${Math.abs(coin.price_change_percentage_24h).toFixed(2)}%
+                            </span>
+                        </div>
+                    `;
+                }).join('');
+                
+                container.innerHTML = items + items; // Duplicate for seamless scroll
+            }
+
+            updateWatchlist(data) {
+                const container = document.getElementById('watchlist');
+                container.innerHTML = data.map(item => `
+                    <div class="watchlist-item">
+                        <div>
+                            <div class="watchlist-symbol">${item.symbol}</div>
+                        </div>
+                        <div class="watchlist-price">
+                            <div>$${this.formatPrice(item.price)}</div>
+                            <div class="ticker-change ${item.change >= 0 ? 'positive' : 'negative'}">
+                                ${item.change >= 0 ? '↑' : '↓'} ${Math.abs(item.change).toFixed(2)}%
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            updateMovers(data) {
+                const tbody = document.getElementById('movers-tbody');
+                const topMovers = [...data.gainers.slice(0, 5), ...data.losers.slice(0, 5)]
+                    .sort((a, b) => Math.abs(b.price_change_percentage_24h) - Math.abs(a.price_change_percentage_24h));
+                
+                tbody.innerHTML = topMovers.slice(0, 10).map(coin => {
+                    const changeClass = coin.price_change_percentage_24h >= 0 ? 'positive' : 'negative';
+                    return `
+                        <tr>
+                            <td>${coin.symbol.toUpperCase()}</td>
+                            <td>$${this.formatPrice(coin.current_price)}</td>
+                            <td class="${changeClass}">
+                                ${coin.price_change_percentage_24h >= 0 ? '↑' : '↓'}
+                                ${Math.abs(coin.price_change_percentage_24h).toFixed(2)}%
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            updateOrderBook(data) {
+                const container = document.getElementById('orderbook');
+                const maxAmount = Math.max(
+                    ...data.bids.map(b => b.amount),
+                    ...data.asks.map(a => a.amount)
+                );
+                
+                const asks = data.asks.slice(0, 10).reverse().map(ask => {
+                    const barWidth = (ask.amount / maxAmount) * 100;
+                    return `
+                        <div class="orderbook-row ask">
+                            <div class="orderbook-bar ask" style="width: ${barWidth}%"></div>
+                            <div>${ask.price.toFixed(2)}</div>
+                            <div>${ask.amount.toFixed(4)}</div>
+                            <div>${(ask.price * ask.amount).toFixed(2)}</div>
+                        </div>
+                    `;
+                }).join('');
+                
+                const bids = data.bids.slice(0, 10).map(bid => {
+                    const barWidth = (bid.amount / maxAmount) * 100;
+                    return `
+                        <div class="orderbook-row bid">
+                            <div class="orderbook-bar bid" style="width: ${barWidth}%"></div>
+                            <div>${bid.price.toFixed(2)}</div>
+                            <div>${bid.amount.toFixed(4)}</div>
+                            <div>${(bid.price * bid.amount).toFixed(2)}</div>
+                        </div>
+                    `;
+                }).join('');
+                
+                container.innerHTML = asks + bids;
+            }
+
+            updateDexHeatmap(pools) {
+                const container = document.getElementById('dex-heatmap');
+                container.innerHTML = pools.map(pool => {
+                    let apyClass = 'low-apy';
+                    if (pool.apy > 20) apyClass = 'high-apy';
+                    else if (pool.apy > 10) apyClass = 'medium-apy';
+                    
+                    return `
+                        <div class="pool-cell ${apyClass}">
+                            <div class="pool-pair">${pool.pair}</div>
+                            <div class="pool-apy" style="color: ${this.getAPYColor(pool.apy)}">
+                                ${pool.apy.toFixed(1)}%
+                            </div>
+                            <div class="pool-tvl">$${this.formatTVL(pool.tvl)}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            updateNFTBoard(collections) {
+                const container = document.getElementById('nft-grid');
+                container.innerHTML = collections.map(nft => {
+                    const changeClass = nft.change >= 0 ? 'positive' : 'negative';
+                    return `
+                        <div class="nft-card">
+                            <div class="nft-image">🖼️</div>
+                            <div class="nft-info">
+                                <div class="nft-collection">${nft.collection}</div>
+                                <div class="nft-floor">${nft.floor} ETH</div>
+                                <div class="nft-change ${changeClass}">
+                                    ${nft.change >= 0 ? '↑' : '↓'} ${Math.abs(nft.change).toFixed(1)}%
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            setupWebSocket() {
+                this.socket = io();
+                
+                this.socket.on('connect', () => {
+                    console.log('WebSocket connected');
+                    this.socket.emit('subscribe', ['ticker', 'trades', 'orderbook']);
+                });
+
+                this.socket.on('price-update', (data) => {
+                    // Handle real-time price updates
+                });
+
+                this.socket.on('trade', (trade) => {
+                    // Handle new trades
+                });
+
+                this.socket.on('orderbook-update', (data) => {
+                    // Handle orderbook updates
+                });
+            }
+
+            startUpdates() {
+                // Update data every 30 seconds
+                setInterval(() => {
+                    this.loadInitialData();
+                }, 30000);
+
+                // Update chart every 5 seconds
+                setInterval(() => {
+                    this.updateChart();
+                }, 5000);
+            }
+
+            updateChart() {
+                // Add new candlestick to chart
+                const lastCandle = this.candlestickSeries.dataByIndex(this.candlestickSeries.data().length - 1);
+                if (lastCandle) {
+                    const newCandle = {
+                        time: Math.floor(Date.now() / 1000),
+                        open: lastCandle.close,
+                        high: lastCandle.close + Math.random() * 20,
+                        low: lastCandle.close - Math.random() * 20,
+                        close: lastCandle.close + (Math.random() - 0.5) * 40
+                    };
+                    this.candlestickSeries.update(newCandle);
+                }
+            }
+
+            updateView() {
+                // Update panels based on selected tab
+                console.log('Switching to view:', this.currentView);
+                // Implementation for different views
+            }
+
+            formatPrice(price) {
+                if (price >= 1000) return price.toLocaleString('en-US', { maximumFractionDigits: 2 });
+                if (price >= 1) return price.toFixed(2);
+                if (price >= 0.01) return price.toFixed(4);
+                return price.toFixed(8);
+            }
+
+            formatTVL(tvl) {
+                if (tvl >= 1e9) return `${(tvl / 1e9).toFixed(1)}B`;
+                if (tvl >= 1e6) return `${(tvl / 1e6).toFixed(1)}M`;
+                if (tvl >= 1e3) return `${(tvl / 1e3).toFixed(1)}K`;
+                return tvl.toFixed(0);
+            }
+
+            getAPYColor(apy) {
+                if (apy > 20) return '#00ff00';
+                if (apy > 10) return '#ffd700';
+                if (apy > 5) return '#0080ff';
+                return '#808080';
+            }
+
+            showTerminal() {
+                const loadingScreen = document.getElementById('loading-screen');
+                const terminal = document.getElementById('terminal');
+                
+                loadingScreen.style.opacity = '0';
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                    terminal.style.display = 'flex';
+                    setTimeout(() => {
+                        terminal.style.opacity = '1';
+                    }, 50);
+                }, 500);
+            }
+        }
+
+        // Initialize terminal
+        window.addEventListener('DOMContentLoaded', () => {
+            window.terminal = new BloombergTerminal();
+        });
+    </script>
+</body>
+</html>
